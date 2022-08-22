@@ -585,10 +585,15 @@ namespace ULTRAKILLtweaker
 
         public void InitReset()
         {
+            GameObject hud = player.ChildByName("Main Camera").ChildByName("HUD Camera").ChildByName("HUD");
             if (Convert.ToBoolean(SettingRegistry.idToSetting["forcegun"].value))
             {
-                GameObject hud = player.ChildByName("Main Camera").ChildByName("HUD Camera").ChildByName("HUD");
                 hud.ChildByName("GunCanvas").ChildByName("GunPanel").SetActive(true);
+            }
+
+            if (!Convert.ToBoolean(SettingRegistry.idToSetting["ARTIFACT_noweapons"].value))
+            {
+                hud.ChildByName("GunCanvas").ChildByName("GunPanel").SetActive(false);
             }
         }
 
