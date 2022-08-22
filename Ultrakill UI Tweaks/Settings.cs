@@ -159,7 +159,7 @@ namespace ULTRAKILLtweaker
     {
         public static Dictionary<string, Setting> idToSetting = new Dictionary<string, Setting>();
         public static List<Setting> settings = new List<Setting>();
-        public static string kelPath = Path.Combine(Utils.GameDirectory(), @"BepInEx\UKMM Mods\ULTRAKILLtweaker\settings.kel");
+        public static string kelPath = Path.Combine(Utils.GameDirectory(), @"BepInEx\UMM Mods\ULTRAKILLtweaker\settings.kel");
         public static char split = 'ඞ';
 
         public static void Read()

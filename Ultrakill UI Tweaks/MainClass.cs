@@ -81,7 +81,7 @@ namespace ULTRAKILLtweaker
             }
         }
 
-        #region UKMM stuff, handles loading and unloading.
+        #region UMM stuff, handles loading and unloading.
         public override void OnModLoaded()
         {
             Instance = this;
@@ -149,7 +149,7 @@ namespace ULTRAKILLtweaker
             // Load the assetbundle if it isn't loaded.
             if (UIBundle == null)
             {
-                UIBundle = AssetBundle.LoadFromFile(Path.Combine(Utils.GameDirectory(), @"BepInEx\UKMM Mods\ULTRAKILLtweaker\tweakerassets.bundle"));
+                UIBundle = AssetBundle.LoadFromFile(Path.Combine(Utils.GameDirectory(), @"BepInEx\UMM Mods\ULTRAKILLtweaker\tweakerassets.bundle"));
             }
 
             // Set the statman - it is used for various things, doesn't exist in Main Menu though
@@ -294,7 +294,7 @@ namespace ULTRAKILLtweaker
             #endregion
 
             // This sets the text to show where your custom music directory is.
-            TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("CybergrindMusic").ChildByName("Path").GetComponent<Text>().text = Path.Combine(Utils.GameDirectory(), @"BepInEx\UKMM Mods\plugins\ULTRAKILLtweaker\Cybergrind Music");
+            TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("CybergrindMusic").ChildByName("Path").GetComponent<Text>().text = Path.Combine(Utils.GameDirectory(), @"BepInEx\UMM Mods\plugins\ULTRAKILLtweaker\Cybergrind Music");
 
             foreach (Setting setting in SettingRegistry.settings)
             {
@@ -692,7 +692,7 @@ namespace ULTRAKILLtweaker
 
         public List<AudioClip> GetClipsFromFolder()
         {
-            string[] allFiles = Directory.GetFiles(Path.Combine(Utils.GameDirectory(), @"BepInEx\UKMM Mods\ULTRAKILLtweaker\Cybergrind Music"));
+            string[] allFiles = Directory.GetFiles(Path.Combine(Utils.GameDirectory(), @"BepInEx\UMM Mods\ULTRAKILLtweaker\Cybergrind Music"));
 
             string[] supportedFileExtensions = new string[]
             {
