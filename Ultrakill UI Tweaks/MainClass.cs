@@ -759,11 +759,11 @@ namespace ULTRAKILLtweaker
                     {
                         yield break;
                     }
-                    yield return new WaitForSeconds(0.5f);
+                    yield return null;
                 }
                 else
                 {
-                    yield return new WaitForSeconds(0.5f);
+                    yield return null;
                 }
             }
         }
