@@ -28,6 +28,7 @@ namespace ULTRAKILLtweaker
         public GameObject TweakerMenu;
         public GameObject CyberGrind;
         public GameObject DiceRoll;
+        public GameObject Speedometer;
 
         // Stuff that handles the pages for the tweaks.
         public List<GameObject> Pages = new List<GameObject>();
@@ -92,7 +93,7 @@ namespace ULTRAKILLtweaker
             harmony.PatchAll(typeof(ModResultsPatch));
             harmony.PatchAll(typeof(HitstopPatches));
             harmony.PatchAll(typeof(EnemySpawnPatch));
-            harmony.PatchAll(typeof(AddArms));
+            harmony.PatchAll(typeof(WhipFix));
 
             SceneManager.sceneLoaded += OnSceneWasLoaded;
 
@@ -110,7 +111,7 @@ namespace ULTRAKILLtweaker
 
             List<GameObject> ToDestroy = new List<GameObject>()
             {
-                TweakerButton, TweakerMenu, CyberGrind, DiceRoll
+                TweakerButton, TweakerMenu, CyberGrind, DiceRoll, Speedometer
             };
 
             foreach(GameObject go in ToDestroy)
@@ -214,10 +215,13 @@ namespace ULTRAKILLtweaker
                 CyberGrind = Instantiate(UIBundle.LoadAsset<GameObject>("GrindCanvas"));
             if (DiceRoll == null)
                 DiceRoll = Instantiate(UIBundle.LoadAsset<GameObject>("DicerollCanvas"));
+            if (Speedometer == null)
+                Speedometer = Instantiate(UIBundle.LoadAsset<GameObject>("Speedometer"));
             DontDestroyOnLoad(CyberGrind);
             DontDestroyOnLoad(DiceRoll);
             CyberGrind.SetActive(false);
             DiceRoll.SetActive(false);
+            Speedometer.SetActive(false);
 
             // For some reason, the game crashes when you try set the transform.parent of a GameObject the same frame as it was instantiated.
             // Here, we wait a frame and then do the stuff.
@@ -270,6 +274,7 @@ namespace ULTRAKILLtweaker
             SettingRegistry.settings.Add(new ToggleSetting("cybergrindmusic", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("CybergrindMusic"), false));
             SettingRegistry.settings.Add(new ToggleSetting("seeviewmodel", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("No Viewmodel"), false));
             SettingRegistry.settings.Add(new ToggleSetting("fpscounter", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("FPS"), false));
+            SettingRegistry.settings.Add(new ToggleSetting("speedometer", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("Speedometer"), false));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_sandify", TweakerMenu.ChildByName("Modifiers").ChildByName("Sandify"), false, true, "Sandify", "Every enemy gets covered in sand. Parrying is the only way to heal."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_noHP", TweakerMenu.ChildByName("Modifiers").ChildByName("Fragility"), false, true, "Fragility", "You only have 1 HP - if you get hit, you die."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_glass", TweakerMenu.ChildByName("Modifiers").ChildByName("Glass"), true, true, "Glass", "Deal two times the damage - at the cost of 70% of your health."));
@@ -283,6 +288,7 @@ namespace ULTRAKILLtweaker
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_gofast", TweakerMenu.ChildByName("Modifiers").ChildByName("GoFast"), true, true, "Speed", "You run at 2 times the speed. Enemy speed is multiplied by 7.5 to keep up."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_noarm", TweakerMenu.ChildByName("Modifiers").ChildByName("No Arms"), false, true, "Disarmed", "V1 has no arms. You can't punch, whiplash, or parry."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_fuelleak", TweakerMenu.ChildByName("Modifiers").ChildByName("Fuel Leak"), false, true, "Fuel Leak", "Blood is actually fuel, and gets used over time. Heal before all of your HP runs out."));
+            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_whiphard", TweakerMenu.ChildByName("Modifiers").ChildByName("WhipFix"), true, true, "Whiplash Fix", "Reduce hard damage from whiplash use, or get rid of it entirely."));
 
             SettingRegistry.settings.Add(new SliderSetting("artiset_fuelleak_multi", TweakerMenu.ChildByName("Modifiers").ChildByName("Fuel Leak").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Damage Drain"), 0.1f, 2, 1, false, "{0}x"));
             SettingRegistry.settings.Add(new SliderSetting("artiset_noHP_hpamount", TweakerMenu.ChildByName("Modifiers").ChildByName("Fragility").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("HP"), 1, 100, 1, true, "{0} HP"));
@@ -291,6 +297,7 @@ namespace ULTRAKILLtweaker
             SettingRegistry.settings.Add(new SliderSetting("artiset_gofast_player", TweakerMenu.ChildByName("Modifiers").ChildByName("GoFast").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Player"), 0.5f, 7.5f, 2, false, "{0}x"));
             SettingRegistry.settings.Add(new SliderSetting("artiset_gofast_enemy", TweakerMenu.ChildByName("Modifiers").ChildByName("GoFast").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Enemy"), 0.5f, 7.5f, 7.5f, false, "{0}x"));
             SettingRegistry.settings.Add(new SliderSetting("artiset_tankify_mult", TweakerMenu.ChildByName("Modifiers").ChildByName("Tankify").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 1f, 10f, 2f, false, "{0}x"));
+            SettingRegistry.settings.Add(new SliderSetting("artiset_whip_hard_mult", TweakerMenu.ChildByName("Modifiers").ChildByName("WhipFix").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 0f, 2f, 0.5f, false, "{0}x"));
             #endregion
 
             // This sets the text to show where your custom music directory is.
@@ -378,14 +385,16 @@ namespace ULTRAKILLtweaker
         {
             if (OptionsMenu != null)
             {
+              
                 #region This code is bad, have to do it because the scale/pos breaks when you set parent. Not too bad, as when it is in the correct pos/scale it doesn't happen
                 if (TweakerButton != null)
                 {
-                    if (TweakerButton.transform.position != new Vector3(45, 1000, 0) || TweakerButton.transform.localScale != Vector3.one)
+                    if (TweakerButton.transform.position != new Vector3((45f / 1920f) * Screen.width, (1000f / 1080f) * Screen.height, 0) || TweakerButton.transform.localScale != Vector3.one)
                     {
-                        TweakerButton.transform.position = new Vector3(45, 1000, 0);
+                        TweakerButton.transform.position = new Vector3((45f/1920f) * Screen.width, (1000f / 1080f) * Screen.height, 0);
                         TweakerButton.transform.localScale = new Vector3(1, 1, 1);
                     }
+                    Debug.Log($"w{Screen.width}h{Screen.height}");
                 }
 
                 if (TweakerMenu != null)
@@ -409,6 +418,7 @@ namespace ULTRAKILLtweaker
                     }
                 }
                 #endregion
+           
             }
 
             if (SettingsInit)
@@ -445,6 +455,11 @@ namespace ULTRAKILLtweaker
 
                 if (SceneManager.GetActiveScene().name != "Main Menu")
                 {
+                    if (Convert.ToBoolean(SettingRegistry.idToSetting["speedometer"].value))
+                    {
+                        Speedometer.ChildByName("Panel").ChildByName("SPEED").GetComponent<Text>().text = Math.Round(nm.rb.velocity.magnitude, 1).ToString();
+                    }
+
                     UpdateArtifact();
                 }
             }
@@ -672,6 +687,8 @@ namespace ULTRAKILLtweaker
             {
                 DiceRoll.SetActive(true);
             }
+            
+            Speedometer.SetActive(Convert.ToBoolean(SettingRegistry.idToSetting["speedometer"].value));
 
             if (!Convert.ToBoolean(SettingRegistry.idToSetting["ARTIFACT_noarm"].value))
             {
@@ -805,6 +822,23 @@ namespace ULTRAKILLtweaker
 
                 if(SettingRegistry.settings.Count != 0)
                     text.text = "<size=20>+ " + mods.Substring(0, mods.Length - 2) + "</size>\n<size=10>\n</size>" + text.text;
+            }
+        }
+
+        [HarmonyPatch(typeof(NewMovement), "ForceAddAntiHP")]
+        public static class WhipFix
+        {
+            [HarmonyPrefix]
+            public static void HardDamage(NewMovement __instance, ref float amount)
+            {
+                if (!Convert.ToBoolean(SettingRegistry.idToSetting["ARTIFACT_whiphard"].value))
+                {
+                    System.Diagnostics.StackTrace stackTrace = new System.Diagnostics.StackTrace();
+                    if (stackTrace.ToString().Contains("Hook"))
+                    {
+                        amount *= Convert.ToSingle(SettingRegistry.idToSetting["artiset_whip_hard_mult"].value);
+                    }
+                }
             }
         }
 
