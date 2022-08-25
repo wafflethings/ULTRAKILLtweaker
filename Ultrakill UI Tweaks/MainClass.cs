@@ -802,7 +802,9 @@ namespace ULTRAKILLtweaker
                         }
                     }
                 }
-                text.text = "<size=20>+ " + mods.Substring(0, mods.Length - 2) + "</size>\n<size=10>\n</size>" + text.text;
+
+                if(SettingRegistry.settings.Count != 0)
+                    text.text = "<size=20>+ " + mods.Substring(0, mods.Length - 2) + "</size>\n<size=10>\n</size>" + text.text;
             }
         }
 
