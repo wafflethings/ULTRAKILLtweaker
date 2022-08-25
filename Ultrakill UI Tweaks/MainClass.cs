@@ -399,9 +399,9 @@ namespace ULTRAKILLtweaker
 
                 if (TweakerMenu != null)
                 {
-                    if (TweakerMenu.transform.position != new Vector3(960, 540, 0) || TweakerMenu.transform.localScale != Vector3.one)
+                    if (TweakerMenu.transform.position != new Vector3(Screen.width / 2, Screen.height / 2, 0) || TweakerMenu.transform.localScale != Vector3.one)
                     {
-                        TweakerMenu.transform.position = new Vector3(960, 540, 0);
+                        TweakerMenu.transform.position = new Vector3(Screen.width / 2, Screen.height / 2, 0);
                         TweakerMenu.transform.localScale = new Vector3(1, 1, 1);
                     }
                 }
