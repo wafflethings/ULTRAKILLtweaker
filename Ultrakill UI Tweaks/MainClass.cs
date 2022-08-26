@@ -394,7 +394,6 @@ namespace ULTRAKILLtweaker
                         TweakerButton.transform.position = new Vector3((45f/1920f) * Screen.width, (1000f / 1080f) * Screen.height, 0);
                         TweakerButton.transform.localScale = new Vector3(1, 1, 1);
                     }
-                    Debug.Log($"w{Screen.width}h{Screen.height}");
                 }
 
                 if (TweakerMenu != null)
@@ -455,7 +454,7 @@ namespace ULTRAKILLtweaker
 
                 if (SceneManager.GetActiveScene().name != "Main Menu")
                 {
-                    if (Convert.ToBoolean(SettingRegistry.idToSetting["speedometer"].value))
+                    if (Convert.ToBoolean(SettingRegistry.idToSetting["speedometer"].value) && nm.gameObject != null)
                     {
                         Speedometer.ChildByName("Panel").ChildByName("SPEED").GetComponent<Text>().text = Math.Round(nm.rb.velocity.magnitude, 1).ToString();
                     }
@@ -808,6 +807,7 @@ namespace ULTRAKILLtweaker
                 GameObject hud = Instance.player.ChildByName("Main Camera").ChildByName("HUD Camera").ChildByName("HUD");
                 Text text = hud.ChildByName("FinishCanvas").ChildByName("Panel").ChildByName("Extra Info").ChildByName("Text").GetComponent<Text>();
                 string mods = "";
+                int ModAmount = 0;
 
                 foreach (Setting mod in SettingRegistry.settings)
                 {
@@ -815,12 +815,13 @@ namespace ULTRAKILLtweaker
                     {
                         if (!Convert.ToBoolean(mod.value))
                         {
+                            ModAmount++;
                             mods += ((ArtifactSetting)mod).Name.ToUpper() + ", ";
                         }
                     }
                 }
 
-                if(SettingRegistry.settings.Count != 0)
+                if(ModAmount != 0)
                     text.text = "<size=20>+ " + mods.Substring(0, mods.Length - 2) + "</size>\n<size=10>\n</size>" + text.text;
             }
         }
