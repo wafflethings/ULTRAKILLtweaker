@@ -51,8 +51,7 @@ namespace ULTRAKILLtweaker
 
         public void OnEnable()
         {
-            if(MainClass.Instance.statman != null)
-                GetComponent<Toggle>().enabled = !MainClass.Instance.statman.timer;
+
         }
     }
 }
