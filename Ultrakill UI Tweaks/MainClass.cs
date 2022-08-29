@@ -206,9 +206,12 @@ namespace ULTRAKILLtweaker
 
         public void OnEnemyDamage(EnemyIdentifier eid, float dmg)
         {
-            string Data = $"Damage done from {eid.hitter} to {eid.name.Replace("(Clone)", "")}: {Math.Round(dmg, 3)}";
-            Debug.Log(Data);
-            MonoSingleton<SubtitleController>.Instance.DisplaySubtitle(Data);
+            if (Convert.ToBoolean(SettingRegistry.idToSetting["dmgsub"].value))
+            {
+                string Data = $"Damage done from {eid.hitter} to {eid.name.Replace("(Clone)", "")}: {Math.Round(dmg, 3)}";
+                Debug.Log(Data);
+                MonoSingleton<SubtitleController>.Instance.DisplaySubtitle($"<size=10>{Data}</size>");
+            }
         }
 
         #endregion
@@ -287,6 +290,7 @@ namespace ULTRAKILLtweaker
             SettingRegistry.settings.Add(new ToggleSetting("seeviewmodel", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("No Viewmodel"), false));
             SettingRegistry.settings.Add(new ToggleSetting("fpscounter", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("FPS"), false));
             SettingRegistry.settings.Add(new ToggleSetting("speedometer", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("Speedometer"), false));
+            SettingRegistry.settings.Add(new ToggleSetting("dmgsub", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("Damage Sign"), false));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_sandify", TweakerMenu.ChildByName("Modifiers").ChildByName("Sandify"), false, true, "Sandify", "Every enemy gets covered in sand. Parrying is the only way to heal."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_noHP", TweakerMenu.ChildByName("Modifiers").ChildByName("Fragility"), false, true, "Fragility", "You only have 1 HP - if you get hit, you die."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_glass", TweakerMenu.ChildByName("Modifiers").ChildByName("Glass"), true, true, "Glass", "Deal two times the damage - at the cost of 70% of your health."));
