@@ -874,11 +874,14 @@ namespace ULTRAKILLtweaker
         {
             public static void Postfix(BossHealthBar __instance)
             {
-                GameObject bossbar = __instance.GetFieldValue<GameObject>("bossBar");
-                Debug.Log($"Bossbar found: {bossbar}.");
-                foreach (GameObject slider in bossbar.ChildByName("Panel").ChildByName("Filler").ChildrenList())
+                if (!Convert.ToBoolean(SettingRegistry.idToSetting["ARTIFACT_tank"].value)) 
                 {
-                    slider.GetComponent<Slider>().maxValue *= Convert.ToSingle(SettingRegistry.idToSetting["artiset_tankify_mult"].value);
+                    GameObject bossbar = __instance.GetFieldValue<GameObject>("bossBar");
+                    Debug.Log($"Bossbar found: {bossbar}.");
+                    foreach (GameObject slider in bossbar.ChildByName("Panel").ChildByName("Filler").ChildrenList())
+                    {
+                        slider.GetComponent<Slider>().maxValue *= Convert.ToSingle(SettingRegistry.idToSetting["artiset_tankify_mult"].value);
+                    }
                 }
             }
         }
