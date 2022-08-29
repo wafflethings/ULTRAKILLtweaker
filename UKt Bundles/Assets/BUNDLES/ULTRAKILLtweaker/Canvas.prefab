@@ -1948,7 +1948,7 @@ MonoBehaviour:
   m_Text: '- Right clicking some modifiers will let you tweak parameters.
 
     -
-    Changing modifiers in game will restart the mission'
+    Clicking on modifiers in game will <color=red>restart the mission</color>.'
 --- !u!1 &2024580985931981710
 GameObject:
   m_ObjectHideFlags: 0
