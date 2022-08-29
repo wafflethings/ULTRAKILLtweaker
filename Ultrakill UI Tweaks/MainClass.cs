@@ -245,16 +245,6 @@ namespace ULTRAKILLtweaker
             DiceRoll.SetActive(false);
             Speedometer.SetActive(false);
 
-            // For some reason, the game crashes when you try set the transform.parent of a GameObject the same frame as it was instantiated.
-            // Here, we wait a frame and then do the stuff.
-
-            StartCoroutine(WeirdgeFix());
-        }
-
-        public IEnumerator WeirdgeFix()
-        {
-            yield return null;
-
             // Set up OnClick for the tweaker button, as it is a clone of the Save Slot button it still enables the save slots, so it needs to be disabled it.
             // I tried clearing the listeners, but it still showed the Save Slots. Bad code, but it works, so don't touch.
             TweakerButton.name = "Tweaker Button";
@@ -303,7 +293,7 @@ namespace ULTRAKILLtweaker
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_superhot", TweakerMenu.ChildByName("Modifiers").ChildByName("Superhot"), true, true, "UltraHot", "Time only moves when you move."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_tank", TweakerMenu.ChildByName("Modifiers").ChildByName("Tankify"), false, true, "Tankify", "Every enemy gets two times the health."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_distance", TweakerMenu.ChildByName("Modifiers").ChildByName("Distance"), false, true, "Close Quarters", "Enemies become blessed when too far."));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_noweapons", TweakerMenu.ChildByName("Modifiers").ChildByName("No Weapons"), false,true, "Empty Handed", "No weapons, punch your enemies to death. Good luck beating P-1."));
+            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_noweapons", TweakerMenu.ChildByName("Modifiers").ChildByName("No Weapons"), false, true, "Empty Handed", "No weapons, punch your enemies to death. Good luck beating P-1."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_nostamina", TweakerMenu.ChildByName("Modifiers").ChildByName("NoStamina"), false, true, "Lethargy", "V1 is tired, and has no stamina. No sliding, dash-jumps, or power-slams."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_diceroll", TweakerMenu.ChildByName("Modifiers").ChildByName("Random"), true, true, "Dice-Roll", "Every 30 seconds, your weapon loadout is randomised. Includes scrapped and unowned weapons! (if the current update has any)"));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_water", TweakerMenu.ChildByName("Modifiers").ChildByName("Water"), true, true, "Submerged", "Every level is flooded with water."));
@@ -643,7 +633,7 @@ namespace ULTRAKILLtweaker
             // Reset the CG panel values back to 0
             CyberGrind.ChildByName("Panel").ChildByName("WaveCount").GetComponent<Text>().text = "0";
             CyberGrind.ChildByName("Panel").ChildByName("EnemyCount").GetComponent<Text>().text = "0";
-            CyberGrind.ChildByName("Panel").ChildByName("Time").GetComponent<Text>().text = "00:00:000";
+            CyberGrind.ChildByName("Panel").ChildByName("Time").GetComponent<Text>().text = "00:00.000";
             CyberGrind.ChildByName("Panel").ChildByName("Kills").GetComponent<Text>().text = "0";
             CyberGrind.ChildByName("Panel").ChildByName("Style").GetComponent<Text>().text = "0";
 
