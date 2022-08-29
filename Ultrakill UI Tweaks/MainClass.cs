@@ -97,6 +97,8 @@ namespace ULTRAKILLtweaker
             harmony.PatchAll(typeof(HitstopPatches));
             harmony.PatchAll(typeof(EnemySpawnPatch));
             harmony.PatchAll(typeof(WhipFix));
+            harmony.PatchAll(typeof(OnDamagePatch));
+            harmony.PatchAll(typeof(TankAwake));
 
             SceneManager.sceneLoaded += OnSceneWasLoaded;
 
@@ -201,6 +203,14 @@ namespace ULTRAKILLtweaker
                 }
             }
         }
+
+        public void OnEnemyDamage(EnemyIdentifier eid, float dmg)
+        {
+            string Data = $"Damage done from {eid.hitter} to {eid.name.Replace("(Clone)", "")}: {Math.Round(dmg, 3)}";
+            Debug.Log(Data);
+            MonoSingleton<SubtitleController>.Instance.DisplaySubtitle(Data);
+        }
+
         #endregion
 
         #region Stuff to do with making the extra UKt options menu stuff work
@@ -811,6 +821,39 @@ namespace ULTRAKILLtweaker
         #endregion
 
         #region Harmony Patches
+
+        [HarmonyPatch(typeof(BossHealthBar), "Awake")]
+        public static class TankAwake
+        {
+            public static void Postfix(BossHealthBar __instance)
+            {
+                GameObject bossbar = __instance.GetFieldValue<GameObject>("bossBar");
+                Debug.Log($"Bossbar found: {bossbar}.");
+                foreach (GameObject slider in bossbar.ChildByName("Panel").ChildByName("Filler").ChildrenList())
+                {
+                    slider.GetComponent<Slider>().maxValue *= Convert.ToSingle(SettingRegistry.idToSetting["artiset_tankify_mult"].value);
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(EnemyIdentifier), "DeliverDamage")]
+        public static class OnDamagePatch
+        {
+            public static void Prefix(EnemyIdentifier __instance, out float __state)
+            {
+                __state = __instance.health;
+            }
+
+            public static void Postfix(EnemyIdentifier __instance, float __state)
+            {
+                float damage = __state - __instance.health;
+                if (damage != 0f)
+                {
+                    Instance.OnEnemyDamage(__instance, damage);
+                }
+            }
+        }
+
         [HarmonyPatch(typeof(FinalRank), "SetRank")]
         public static class ModResultsPatch
         {

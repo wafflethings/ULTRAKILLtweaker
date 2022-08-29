@@ -40,7 +40,7 @@ namespace ULTRAKILLtweaker
 
         public string GetDisplay()
         {
-            return string.Format(displayAs, Math.Round(slider.value, 2));
+            return string.Format(displayAs, Math.Round(slider.value, 1));
         }
 
         public override void SetDisplay()
