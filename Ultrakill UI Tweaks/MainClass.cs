@@ -68,6 +68,9 @@ namespace ULTRAKILLtweaker
 
         Coroutine MCL;
 
+        bool HasFirstPatch = false;
+        bool NotFirstLoad = false;
+
         #endregion
 
         public void OnGUI()
@@ -159,10 +162,19 @@ namespace ULTRAKILLtweaker
                 statman = GameObject.Find("StatsManager").GetComponent<StatsManager>();
             }
 
+            if (scene.name != "Main Menu" && scene.name != "Intro")
+            {
+                NotFirstLoad = true;
+            }
+
             // There is probably a better way to do this than GO.Find. This adds the UKt UI elements to the UI.
             if (GameObject.Find("Canvas") != null)
             {
-                StartCoroutine(PatchOptionsMenu());
+                if (!HasFirstPatch || scene.name != "Main Menu" || NotFirstLoad) 
+                {
+                    HasFirstPatch = true;
+                    StartCoroutine(PatchOptionsMenu());
+                }
             }
 
             // If the player is in CG, create the AudioSource for custom music, and check if a CG-illegal mod is enabled.
