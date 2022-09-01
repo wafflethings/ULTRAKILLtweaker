@@ -31,6 +31,7 @@ namespace ULTRAKILLtweaker
         public GameObject Speedometer;
         public GameObject CustomWeaponPanel;
         public GameObject PlayerInfo;
+        public GameObject DPSPanel;
         public List<GameObject> Panels = new List<GameObject>(); // This is the panel objects, e.g speedometer and weapons
 
         // Stuff that handles the pages for the tweaks.
@@ -76,6 +77,9 @@ namespace ULTRAKILLtweaker
         bool HasFirstPatch = false;
         bool NotFirstLoad = false;
 
+        // All hits that have occured in the last Second
+        public List<Hit> HitsSecond = new List<Hit>();
+
         #endregion
 
         public void OnGUI()
@@ -112,6 +116,8 @@ namespace ULTRAKILLtweaker
             {
                OnSceneWasLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
             }
+
+            ResourcePack.GetAllPacks();
         }
 
         public override void OnModUnload()
@@ -121,7 +127,7 @@ namespace ULTRAKILLtweaker
 
             List<GameObject> ToDestroy = new List<GameObject>()
             {
-                TweakerButton, TweakerMenu, CyberGrind, DiceRoll, Speedometer, CustomWeaponPanel, PlayerInfo
+                TweakerButton, TweakerMenu, CyberGrind, DiceRoll, Speedometer, CustomWeaponPanel, PlayerInfo, DPSPanel
             };
 
             foreach(GameObject go in ToDestroy)
@@ -207,6 +213,8 @@ namespace ULTRAKILLtweaker
                     }
                 }
             }
+
+            StartCoroutine(ResourcePack.PatchTextures());
         }
 
         public void OnEnemyDamage(EnemyIdentifier eid, float dmg)
@@ -217,6 +225,8 @@ namespace ULTRAKILLtweaker
                 Debug.Log(Data);
                 MonoSingleton<SubtitleController>.Instance.DisplaySubtitle($"<size=10>{Data}</size>");
             }
+
+            HitsSecond.Add(new Hit(eid, dmg));
         }
 
         #endregion
@@ -239,7 +249,7 @@ namespace ULTRAKILLtweaker
             // Duplicate the save button.
             TweakerButton = Instantiate(OptionsMenu.ChildByName("Saves"));
 
-            // Load all the UI from AssetBundle, DDOL it if it's needed, and disable it.
+            // Load all the UI from AssetBundle and disable it.
             TweakerMenu = Instantiate(UIBundle.LoadAsset<GameObject>("Canvas"));
             if (CyberGrind == null)
                 CyberGrind = Instantiate(UIBundle.LoadAsset<GameObject>("GrindCanvas"));
@@ -251,14 +261,15 @@ namespace ULTRAKILLtweaker
                 CustomWeaponPanel = Instantiate(UIBundle.LoadAsset<GameObject>("Weapons"));
             if(PlayerInfo == null)
                 PlayerInfo = Instantiate(UIBundle.LoadAsset<GameObject>("Info"));
+            if(DPSPanel == null)
+                DPSPanel = Instantiate(UIBundle.LoadAsset<GameObject>("DPS"));
 
-            DontDestroyOnLoad(CyberGrind);
-            DontDestroyOnLoad(DiceRoll);
             CyberGrind.SetActive(false);
             DiceRoll.SetActive(false);
             Speedometer.SetActive(false);
             CustomWeaponPanel.SetActive(false);
             PlayerInfo.SetActive(false);
+            DPSPanel.SetActive(false);
 
             // Set up OnClick for the tweaker button, as it is a clone of the Save Slot button it still enables the save slots, so it needs to be disabled it.
             // I tried clearing the listeners, but it still showed the Save Slots. Bad code, but it works, so don't touch.
@@ -305,6 +316,7 @@ namespace ULTRAKILLtweaker
             SettingRegistry.settings.Add(new ToggleSetting("dmgsub", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("Damage Sign"), false));
             SettingRegistry.settings.Add(new ToggleSetting("weapanel", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 3").ChildByName("Weapon Panel"), false));
             SettingRegistry.settings.Add(new ToggleSetting("hppanel", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 3").ChildByName("Info Panel"), false));
+            SettingRegistry.settings.Add(new ToggleSetting("dps", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 3").ChildByName("DPS panel"), false));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_sandify", TweakerMenu.ChildByName("Modifiers").ChildByName("Sandify"), false, true, "Sandify", "Every enemy gets covered in sand. Parrying is the only way to heal."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_noHP", TweakerMenu.ChildByName("Modifiers").ChildByName("Fragility"), false, true, "Fragility", "You only have 1 HP - if you get hit, you die."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_glass", TweakerMenu.ChildByName("Modifiers").ChildByName("Glass"), true, true, "Glass", "Deal two times the damage - at the cost of 70% of your health."));
@@ -416,7 +428,6 @@ namespace ULTRAKILLtweaker
         {
             if (OptionsMenu != null)
             {
-              
                 #region This code is bad, have to do it because the scale/pos breaks when you set parent. Not too bad, as when it is in the correct pos/scale it doesn't happen
                 if (TweakerButton != null)
                 {
@@ -483,7 +494,7 @@ namespace ULTRAKILLtweaker
                     }
                 }
 
-                if (SceneManager.GetActiveScene().name != "Main Menu")
+                if (SceneManager.GetActiveScene().name != "Main Menu" && !HasntHappenedThisScene)
                 {
                     if (Convert.ToBoolean(SettingRegistry.idToSetting["speedometer"].value) && nm.gameObject != null)
                     {
@@ -510,6 +521,30 @@ namespace ULTRAKILLtweaker
 
                         PlayerInfo.ChildByName("Panel").ChildByName("HP").GetComponent<Text>().text = $"{nm.hp}{prefix} / {100 - Math.Round(nm.antiHp, 0)}{suffix}";
                         PlayerInfo.ChildByName("Panel").ChildByName("Stamina").GetComponent<Text>().text = $"{(nm.boostCharge / 100).ToString("0.00")} / 3.00";
+                    }
+
+                    if (Convert.ToBoolean(SettingRegistry.idToSetting["hppanel"].value) && nm.gameObject != null)
+                    {
+                        float DPS = 0;
+                        // I would use foreach but you can't edit the list in foreaches
+                        for (int i = 0; i < HitsSecond.Count; i++)
+                        {
+                            Hit hit = HitsSecond[i];
+                            if ((DateTime.Now - hit.time).TotalSeconds > 1)
+                            {
+                                HitsSecond.RemoveAt(i);
+                                i--;
+                            }
+                            else 
+                            {
+                                float ActualDmg = hit.dmg;
+
+                                if(ActualDmg < 1000000 && ActualDmg > 0)
+                                    DPS += ActualDmg;
+                            }
+                        }
+
+                        DPSPanel.ChildByName("Panel").ChildByName("DPS").GetComponent<Text>().text = Math.Round(DPS, 2).ToString();
                     }
 
                     UpdateArtifact();
@@ -678,7 +713,7 @@ namespace ULTRAKILLtweaker
             CyberGrind.ChildByName("Panel").ChildByName("Kills").GetComponent<Text>().text = "0";
             CyberGrind.ChildByName("Panel").ChildByName("Style").GetComponent<Text>().text = "0";
 
-            #region Stuff that happens, on player spawn, for the settings
+            #region Stuff that happens on player spawn, for the settings
             if (Convert.ToSingle(SettingRegistry.idToSetting["uiscale"].value) != 100)
             {
                 foreach (GameObject go in hud.ChildrenList())
@@ -739,7 +774,8 @@ namespace ULTRAKILLtweaker
             {
                 DiceRoll.SetActive(true);
             }
-            
+
+            DPSPanel.SetActive(Convert.ToBoolean(SettingRegistry.idToSetting["dps"].value));
             Speedometer.SetActive(Convert.ToBoolean(SettingRegistry.idToSetting["speedometer"].value));
             CustomWeaponPanel.SetActive(Convert.ToBoolean(SettingRegistry.idToSetting["weapanel"].value));
             PlayerInfo.SetActive(Convert.ToBoolean(SettingRegistry.idToSetting["hppanel"].value));
@@ -752,6 +788,12 @@ namespace ULTRAKILLtweaker
             if (Convert.ToBoolean(SettingRegistry.idToSetting["weapanel"].value))
             {
                 Speedometer.ChildByName("Panel").transform.position += new Vector3(0, 68.5f, 0);
+                DPSPanel.ChildByName("Panel").transform.position += new Vector3(0, 68.5f, 0);
+            }
+
+            if(Convert.ToBoolean(SettingRegistry.idToSetting["speedometer"].value))
+            {
+                DPSPanel.ChildByName("Panel").transform.position += new Vector3(274, 0, 0);
             }
 
             if (Convert.ToBoolean(SettingRegistry.idToSetting["hppanel"].value))
@@ -1158,5 +1200,19 @@ namespace ULTRAKILLtweaker
             }
         }
     #endregion
+
+    public class Hit
+    {
+        public DateTime time;
+        public EnemyIdentifier eid;
+        public float dmg;
+
+        public Hit(EnemyIdentifier eid, float dmg)
+        {
+            this.eid = eid;
+            this.dmg = dmg;
+            this.time = DateTime.Now;
+        }
+    }
 }
 
