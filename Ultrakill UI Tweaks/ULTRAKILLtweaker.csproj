@@ -465,6 +465,7 @@
     <Compile Include="ResourcePack.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="TextureOverwatch.cs" />
+    <Compile Include="TouchingGround.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

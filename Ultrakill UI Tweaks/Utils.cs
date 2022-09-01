@@ -90,6 +90,11 @@ namespace FallFactory
             return objs;
         }
 
+        public static GameObject PageContent(this GameObject from)
+        {
+            return from.ChildByName("Viewport").ChildByName("Content");
+        }
+
         public static List<GameObject> ChildrenList(this GameObject from)
         {
             List<GameObject> children = new List<GameObject>();
