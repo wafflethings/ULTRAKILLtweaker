@@ -40,6 +40,17 @@ namespace FallFactory
             from.transform.localScale += direction * amount; // Scale object in the specified direction
         }
 
+        public static string PathToName(this string from)
+        {
+            return from.Split('\\').Last();
+        }
+
+        public static string RemoveFileExt(this string from)
+        {
+            int len = from.Split('.').Last().Length + 1;
+            return from.Substring(0, from.Length - len);
+        }
+
         public static GameObject ChildByName(this GameObject from, string name)
         {
             List<GameObject> children = new List<GameObject>();
@@ -63,6 +74,25 @@ namespace FallFactory
                 }
             }
             return null;
+        }
+
+        public static List<GameObject> FindSceneObjects(string sceneName)
+        {
+            List<GameObject> objs = new List<GameObject>();
+            foreach (GameObject obj in GameObject.FindObjectsOfType<GameObject>())
+            {
+                if (obj.scene.name == sceneName)
+                {
+                    objs.Add(obj);
+                }
+            }
+
+            return objs;
+        }
+
+        public static GameObject PageContent(this GameObject from)
+        {
+            return from.ChildByName("Viewport").ChildByName("Content");
         }
 
         public static List<GameObject> ChildrenList(this GameObject from)

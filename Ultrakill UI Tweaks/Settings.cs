@@ -19,11 +19,18 @@ namespace ULTRAKILLtweaker
         public bool forceWhole { get; private set; }
         public string displayAs { get; private set; }
 
-        public SliderSetting(string SettingID, GameObject sliderobj, float mini, float maxi, float settingDefaultValue, bool whole = false, string display = "{0}")
+        public SliderSetting(string SettingID, GameObject sliderobj, float mini, float maxi, float settingDefaultValue, bool whole = false, string display = "{0}", bool NotChildOfArtifact = false)
         {
             ID = SettingID;
-            slider = sliderobj.GetComponent<Slider>();
-            text = sliderobj.ChildByName("Amount").GetComponent<Text>();
+            if (NotChildOfArtifact)
+            {
+                slider = sliderobj.ChildByName("Slider").GetComponent<Slider>();
+                text = sliderobj.ChildByName("Slider").ChildByName("Amount").GetComponent<Text>();
+            } else
+            {
+                slider = sliderobj.GetComponent<Slider>();
+                text = sliderobj.ChildByName("Amount").GetComponent<Text>();
+            }
             min = mini;
             max = maxi;
 
@@ -64,10 +71,15 @@ namespace ULTRAKILLtweaker
     {
         public Toggle toggle { get; private set; }
 
-        public ToggleSetting(string SettingID, GameObject toggleobj, bool settingDefaultValue)
+        public ToggleSetting(string SettingID, GameObject toggleobj, bool settingDefaultValue, bool NotChildOfArtifact = false)
         {
             ID = SettingID;
-            toggle = toggleobj.GetComponent<Toggle>();
+            
+            if (NotChildOfArtifact)
+                toggle = toggleobj.ChildByName("Toggle").GetComponent<Toggle>();
+            else
+                toggle = toggleobj.GetComponent<Toggle>();
+
             defaultValue = settingDefaultValue;
         }
 

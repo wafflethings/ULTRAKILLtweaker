@@ -31,6 +31,7 @@ namespace ULTRAKILLtweaker
         public GameObject Speedometer;
         public GameObject CustomWeaponPanel;
         public GameObject PlayerInfo;
+        public GameObject DPSPanel;
         public List<GameObject> Panels = new List<GameObject>(); // This is the panel objects, e.g speedometer and weapons
 
         // Stuff that handles the pages for the tweaks.
@@ -47,6 +48,12 @@ namespace ULTRAKILLtweaker
         // The current instance of the RandomiseEvery30. The instance needs to be called to stop the coroutine with StopCoroutine.
         Coroutine CurrentRandom;
 
+        // Current musiccheckloop
+        Coroutine MCL;
+
+        // Same for SetAfterTime.
+        Coroutine SetAfterTime_INST;
+
         // The current instance of the things.
         public StatsManager statman;
         NewMovement nm;
@@ -61,7 +68,8 @@ namespace ULTRAKILLtweaker
 
         // NM.hp is an int, and the amount removed per frame is a small float. Therefore, we increment ToRemove by the small amount, until it is 1.
         // 1 can be removed from the int, so then we take 1 from the HP and ToRemove.
-        public float ToRemove;
+        public float ToRemove_FL; // for fuel leak
+        public float ToRemove_FIL; // for floorislava
 
         // Some mods need a scene reload to work, so if mods are changed in game this is set to true. If it is true on the option menu being turned off, the scene reloads.
         public bool ModsChanged = false;
@@ -69,12 +77,14 @@ namespace ULTRAKILLtweaker
         // Have settings initialised? Needed so that idToSetting isn't null. 
         public bool SettingsInit = false;
 
-        // Current musiccheckloop
-        Coroutine MCL;
-
         // I don't remember but it doesn't need changing 
         bool HasFirstPatch = false;
         bool NotFirstLoad = false;
+
+        // All hits that have occured in the last Second
+        public List<Hit> HitsSecond = new List<Hit>();
+
+        public bool ShouldDamage_FIL = false;
 
         #endregion
 
@@ -104,6 +114,9 @@ namespace ULTRAKILLtweaker
             harmony.PatchAll(typeof(WhipFix));
             harmony.PatchAll(typeof(OnDamagePatch));
             harmony.PatchAll(typeof(TankAwake));
+            harmony.PatchAll(typeof(OnPlayerHit));
+            harmony.PatchAll(typeof(Florpify));
+            harmony.PatchAll(typeof(HmmTodayIWillUndergoMitosis));
 
             SceneManager.sceneLoaded += OnSceneWasLoaded;
 
@@ -112,6 +125,8 @@ namespace ULTRAKILLtweaker
             {
                OnSceneWasLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
             }
+
+            ResourcePack.GetAllPacks();
         }
 
         public override void OnModUnload()
@@ -121,7 +136,7 @@ namespace ULTRAKILLtweaker
 
             List<GameObject> ToDestroy = new List<GameObject>()
             {
-                TweakerButton, TweakerMenu, CyberGrind, DiceRoll, Speedometer, CustomWeaponPanel, PlayerInfo
+                TweakerButton, TweakerMenu, CyberGrind, DiceRoll, Speedometer, CustomWeaponPanel, PlayerInfo, DPSPanel
             };
 
             foreach(GameObject go in ToDestroy)
@@ -167,6 +182,9 @@ namespace ULTRAKILLtweaker
             if (scene.name != "Main Menu")
             {
                 statman = GameObject.Find("StatsManager").GetComponent<StatsManager>();
+            } else
+            {
+                Time.timeScale = 1;
             }
 
             if (scene.name != "Main Menu" && scene.name != "Intro")
@@ -183,6 +201,8 @@ namespace ULTRAKILLtweaker
                     StartCoroutine(PatchOptionsMenu());
                 }
             }
+
+            UKAPI.RemoveDisableCyberGrindReason($"UKTW: CG score tweak disabled");
 
             // If the player is in CG, create the AudioSource for custom music, and check if a CG-illegal mod is enabled.
             if (SceneManager.GetActiveScene().name == "Endless")
@@ -207,6 +227,8 @@ namespace ULTRAKILLtweaker
                     }
                 }
             }
+
+            StartCoroutine(ResourcePack.PatchTextures());
         }
 
         public void OnEnemyDamage(EnemyIdentifier eid, float dmg)
@@ -216,6 +238,35 @@ namespace ULTRAKILLtweaker
                 string Data = $"Damage done from {eid.hitter} to {eid.name.Replace("(Clone)", "")}: {Math.Round(dmg, 3)}";
                 Debug.Log(Data);
                 MonoSingleton<SubtitleController>.Instance.DisplaySubtitle($"<size=10>{Data}</size>");
+            }
+
+            HitsSecond.Add(new Hit(eid, dmg));
+        }
+
+        public void TouchingGroundChanged(GroundCheck check)
+        {
+            Debug.Log($"GROUND CHECK CHANGED: {check.touchingGround}.");
+
+            if(check.touchingGround)
+            {
+                SetAfterTime_INST = StartCoroutine(SetAfterTime(Convert.ToSingle(SettingRegistry.idToSetting["artiset_floorlava_time"].value)));
+            } else
+            {
+                ShouldDamage_FIL = false;
+                StopCoroutine(SetAfterTime_INST);
+            }
+        }
+
+        public IEnumerator SetAfterTime(float time)
+        {
+            yield return new WaitForSeconds(time);
+
+            if(player.ChildByName("GroundCheck").GetComponent<GroundCheck>().touchingGround)
+            {
+                ShouldDamage_FIL = true;
+            } else
+            {
+                ShouldDamage_FIL = false;
             }
         }
 
@@ -239,7 +290,7 @@ namespace ULTRAKILLtweaker
             // Duplicate the save button.
             TweakerButton = Instantiate(OptionsMenu.ChildByName("Saves"));
 
-            // Load all the UI from AssetBundle, DDOL it if it's needed, and disable it.
+            // Load all the UI from AssetBundle and disable it.
             TweakerMenu = Instantiate(UIBundle.LoadAsset<GameObject>("Canvas"));
             if (CyberGrind == null)
                 CyberGrind = Instantiate(UIBundle.LoadAsset<GameObject>("GrindCanvas"));
@@ -251,14 +302,15 @@ namespace ULTRAKILLtweaker
                 CustomWeaponPanel = Instantiate(UIBundle.LoadAsset<GameObject>("Weapons"));
             if(PlayerInfo == null)
                 PlayerInfo = Instantiate(UIBundle.LoadAsset<GameObject>("Info"));
+            if(DPSPanel == null)
+                DPSPanel = Instantiate(UIBundle.LoadAsset<GameObject>("DPS"));
 
-            DontDestroyOnLoad(CyberGrind);
-            DontDestroyOnLoad(DiceRoll);
             CyberGrind.SetActive(false);
             DiceRoll.SetActive(false);
             Speedometer.SetActive(false);
             CustomWeaponPanel.SetActive(false);
             PlayerInfo.SetActive(false);
+            DPSPanel.SetActive(false);
 
             // Set up OnClick for the tweaker button, as it is a clone of the Save Slot button it still enables the save slots, so it needs to be disabled it.
             // I tried clearing the listeners, but it still showed the Save Slots. Bad code, but it works, so don't touch.
@@ -291,20 +343,42 @@ namespace ULTRAKILLtweaker
             TweakerButton.transform.localScale = Vector3.one;
             TweakerMenu.transform.localScale = Vector3.one;
 
-            #region Register, load, all the settings.
+            // Define which pages are used
+            Pages = new List<GameObject>()
+            {
+                TweakerMenu.ChildByName("Tweaks").ChildByName("Misc"),
+                TweakerMenu.ChildByName("Tweaks").ChildByName("Misc HUD"),
+                TweakerMenu.ChildByName("Tweaks").ChildByName("UI Panels"),
+                TweakerMenu.ChildByName("Tweaks").ChildByName("Cybergrind"),
+                TweakerMenu.ChildByName("Tweaks").ChildByName("Fun")
+            };
+
+            #region Register, load, all the settings. 
             SettingRegistry.settings.Clear();
             SettingRegistry.idToSetting.Clear();
-            SettingRegistry.settings.Add(new SliderSetting("uiscale", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 1").ChildByName("UI Scale"), 0, 110, 100, true, "{0}%"));
-            SettingRegistry.settings.Add(new SliderSetting("hitstopmult", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 1").ChildByName("Hitstop Multiplier"), 0, 2, 1, false, "{0}x"));
-            SettingRegistry.settings.Add(new ToggleSetting("forcegun", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 1").ChildByName("Force Gun Modal"), false));
-            SettingRegistry.settings.Add(new ToggleSetting("cybergrindstats", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 1").ChildByName("Cybergrind Stats"), false));
-            SettingRegistry.settings.Add(new ToggleSetting("cybergrindmusic", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("CybergrindMusic"), false));
-            SettingRegistry.settings.Add(new ToggleSetting("seeviewmodel", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("No Viewmodel"), false));
-            SettingRegistry.settings.Add(new ToggleSetting("fpscounter", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("FPS"), false));
-            SettingRegistry.settings.Add(new ToggleSetting("speedometer", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("Speedometer"), false));
-            SettingRegistry.settings.Add(new ToggleSetting("dmgsub", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("Damage Sign"), false));
-            SettingRegistry.settings.Add(new ToggleSetting("weapanel", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 3").ChildByName("Weapon Panel"), false));
-            SettingRegistry.settings.Add(new ToggleSetting("hppanel", TweakerMenu.ChildByName("Tweaks").ChildByName("Page 3").ChildByName("Info Panel"), false));
+
+            SettingRegistry.settings.Add(new SliderSetting("hitstopmult", Pages[0].PageContent().ChildByName("Hitstop Multiplier"), 0, 2, 1, false, "{0}x", true));
+            SettingRegistry.settings.Add(new ToggleSetting("seeviewmodel", Pages[0].PageContent().ChildByName("No Viewmodel"), false, true));
+            SettingRegistry.settings.Add(new ToggleSetting("dmgsub", Pages[0].PageContent().ChildByName("Damage Sign"), false, true));
+
+            SettingRegistry.settings.Add(new SliderSetting("uiscale", Pages[1].PageContent().ChildByName("UI Scale (HP)"), 0, 110, 100, true, "{0}%", true));
+            SettingRegistry.settings.Add(new SliderSetting("uiscalestyle", Pages[1].PageContent().ChildByName("UI Scale (Style)"), 0, 110, 100, true, "{0}%", true));
+            SettingRegistry.settings.Add(new SliderSetting("uiscaleresults", Pages[1].PageContent().ChildByName("UI Scale (Results)"), 0, 100, 100, true, "{0}%", true));
+            SettingRegistry.settings.Add(new ToggleSetting("forcegun", Pages[1].PageContent().ChildByName("Force Gun Modal"), false, true));
+            SettingRegistry.settings.Add(new ToggleSetting("fpscounter", Pages[1].PageContent().ChildByName("FPS"), false, true));
+
+            SettingRegistry.settings.Add(new ToggleSetting("hppanel", Pages[2].PageContent().ChildByName("Info Panel"), false, true));
+            SettingRegistry.settings.Add(new ToggleSetting("weapanel", Pages[2].PageContent().ChildByName("Weapon Panel"), false, true));
+            SettingRegistry.settings.Add(new ToggleSetting("dps", Pages[2].PageContent().ChildByName("DPS panel"), false, true));
+            SettingRegistry.settings.Add(new ToggleSetting("speedometer", Pages[2].PageContent().ChildByName("Speedometer"), false, true));
+
+            SettingRegistry.settings.Add(new ToggleSetting("cybergrindstats", Pages[3].PageContent().ChildByName("Cybergrind Stats"), false, true));
+            SettingRegistry.settings.Add(new ToggleSetting("cybergrindmusic", Pages[3].PageContent().ChildByName("CybergrindMusic"), false, true));
+            SettingRegistry.settings.Add(new ToggleSetting("cybergrindnoscores", Pages[3].PageContent().ChildByName("Disable Scores"), false, true));
+
+            SettingRegistry.settings.Add(new ToggleSetting("explorsion", Pages[4].PageContent().ChildByName("ExplodeDeath"), false, true));
+            SettingRegistry.settings.Add(new ToggleSetting("legally_distinct_florp", Pages[4].PageContent().ChildByName("FlorpSkull"), false, true));
+
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_sandify", TweakerMenu.ChildByName("Modifiers").ChildByName("Sandify"), false, true, "Sandify", "Every enemy gets covered in sand. Parrying is the only way to heal."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_noHP", TweakerMenu.ChildByName("Modifiers").ChildByName("Fragility"), false, true, "Fragility", "You only have 1 HP - if you get hit, you die."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_glass", TweakerMenu.ChildByName("Modifiers").ChildByName("Glass"), true, true, "Glass", "Deal two times the damage - at the cost of 70% of your health."));
@@ -319,6 +393,8 @@ namespace ULTRAKILLtweaker
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_noarm", TweakerMenu.ChildByName("Modifiers").ChildByName("No Arms"), false, true, "Disarmed", "V1 has no arms. You can't punch, whiplash, or parry."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_fuelleak", TweakerMenu.ChildByName("Modifiers").ChildByName("Fuel Leak"), false, true, "Fuel Leak", "Blood is actually fuel, and gets used over time. Heal before all of your HP runs out."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_whiphard", TweakerMenu.ChildByName("Modifiers").ChildByName("WhipFix"), true, true, "Whiplash Fix", "Reduce hard damage from whiplash use, or get rid of it entirely."));
+            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_floorlava", TweakerMenu.ChildByName("Modifiers").ChildByName("FloorIsLava"), false, true, "Floor Is Lava", "You are damaged when grounded. Based on a mod by <b>nptnk#0001</b>."));
+            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_mitosis", TweakerMenu.ChildByName("Modifiers").ChildByName("Mitosis"), true, true, "Mitosis", "Enemies are duplicated. Idea from Vera in the Ultrakill Discord."));
 
             SettingRegistry.settings.Add(new SliderSetting("artiset_fuelleak_multi", TweakerMenu.ChildByName("Modifiers").ChildByName("Fuel Leak").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Damage Drain"), 0.1f, 2, 1, false, "{0}x"));
             SettingRegistry.settings.Add(new SliderSetting("artiset_noHP_hpamount", TweakerMenu.ChildByName("Modifiers").ChildByName("Fragility").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("HP"), 1, 100, 1, true, "{0} HP"));
@@ -328,10 +404,13 @@ namespace ULTRAKILLtweaker
             SettingRegistry.settings.Add(new SliderSetting("artiset_gofast_enemy", TweakerMenu.ChildByName("Modifiers").ChildByName("GoFast").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Enemy"), 0.5f, 7.5f, 7.5f, false, "{0}x"));
             SettingRegistry.settings.Add(new SliderSetting("artiset_tankify_mult", TweakerMenu.ChildByName("Modifiers").ChildByName("Tankify").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 1f, 10f, 2f, false, "{0}x"));
             SettingRegistry.settings.Add(new SliderSetting("artiset_whip_hard_mult", TweakerMenu.ChildByName("Modifiers").ChildByName("WhipFix").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 0f, 2f, 0.5f, false, "{0}x"));
+            SettingRegistry.settings.Add(new SliderSetting("artiset_floorlava_mult", TweakerMenu.ChildByName("Modifiers").ChildByName("FloorIsLava").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 0.1f, 20, 1, false, "{0}x"));
+            SettingRegistry.settings.Add(new SliderSetting("artiset_floorlava_time", TweakerMenu.ChildByName("Modifiers").ChildByName("FloorIsLava").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Wait"), 0f, 5, 0, false, "{0}s"));
+            SettingRegistry.settings.Add(new SliderSetting("artiset_mitosis_amount", TweakerMenu.ChildByName("Modifiers").ChildByName("Mitosis").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 2, 10, 2, true, "{0}x"));
             #endregion
 
             // This sets the text to show where your custom music directory is.
-            TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2").ChildByName("CybergrindMusic").ChildByName("Path").GetComponent<Text>().text = Path.Combine(Utils.GameDirectory(), @"BepInEx\UMM Mods\plugins\ULTRAKILLtweaker\Cybergrind Music");
+            Pages[3].PageContent().ChildByName("CybergrindMusic").ChildByName("Toggle").ChildByName("Path").GetComponent<Text>().text = Path.Combine(Utils.GameDirectory(), @"BepInEx\UMM Mods\plugins\ULTRAKILLtweaker\Cybergrind Music");
 
             foreach (Setting setting in SettingRegistry.settings)
             {
@@ -342,14 +421,6 @@ namespace ULTRAKILLtweaker
             // EnableDisableEvent is added the the optmenu, all it does is call MenuEnable/MenuDisable on OnEnable/OnDisable
             OptionsMenu.AddComponent<EnableDisableEvent>();
             MenuEnable();
-
-            // Define which pages are used
-            Pages = new List<GameObject>()
-            {
-                TweakerMenu.ChildByName("Tweaks").ChildByName("Page 1"),
-                TweakerMenu.ChildByName("Tweaks").ChildByName("Page 2"),
-                TweakerMenu.ChildByName("Tweaks").ChildByName("Page 3")
-            };
 
             Modifiers = TweakerMenu.ChildByName("Modifiers");
 
@@ -378,7 +449,7 @@ namespace ULTRAKILLtweaker
                 }
             });
 
-            TweakerMenu.ChildByName("Tweaks").ChildByName("Page 1").ChildByName("Reset").GetComponent<Button>().onClick.AddListener(() =>
+            Pages[0].PageContent().ChildByName("Reset").GetComponent<Button>().onClick.AddListener(() =>
             {
                 OptionsMenu.SetActive(false);
                 SettingRegistry.Validate(true);
@@ -416,7 +487,6 @@ namespace ULTRAKILLtweaker
         {
             if (OptionsMenu != null)
             {
-              
                 #region This code is bad, have to do it because the scale/pos breaks when you set parent. Not too bad, as when it is in the correct pos/scale it doesn't happen
                 if (TweakerButton != null)
                 {
@@ -475,7 +545,7 @@ namespace ULTRAKILLtweaker
                 }
 
                 // Updates the volume of the custom CG song.
-                if (SceneManager.GetActiveScene().name == "Endless")
+                if (SceneManager.GetActiveScene().name == "Endless" && !HasntHappenedThisScene)
                 {
                     if (Convert.ToBoolean(SettingRegistry.idToSetting["cybergrindmusic"].value))
                     {
@@ -483,22 +553,44 @@ namespace ULTRAKILLtweaker
                     }
                 }
 
-                if (SceneManager.GetActiveScene().name != "Main Menu")
+                if (SceneManager.GetActiveScene().name != "Main Menu" && !HasntHappenedThisScene)
                 {
-                    if (Convert.ToBoolean(SettingRegistry.idToSetting["speedometer"].value) && nm.gameObject != null)
+                    if (Convert.ToBoolean(SettingRegistry.idToSetting["speedometer"].value) && nm.gameObject != null && !nm.dead)
                     {
                         Speedometer.ChildByName("Panel").ChildByName("SPEED").GetComponent<Text>().text = Math.Round(nm.rb.velocity.magnitude, 1).ToString();
                     }
 
-                    if (Convert.ToBoolean(SettingRegistry.idToSetting["weapanel"].value) && nm.gameObject != null)
+                    if (Convert.ToBoolean(SettingRegistry.idToSetting["weapanel"].value) && nm.gameObject != null && !HasntHappenedThisScene && !nm.dead)
                     {
-                        CustomWeaponPanel.ChildByName("Panel").ChildByName("Gun").GetComponent<Image>().sprite = MonoSingleton<WeaponHUD>.Instance.gameObject.GetComponent<Image>().sprite;
-                        CustomWeaponPanel.ChildByName("Panel").ChildByName("Gun").GetComponent<Image>().color = MonoSingleton<WeaponHUD>.Instance.gameObject.GetComponent<Image>().color;
-                        CustomWeaponPanel.ChildByName("Panel").ChildByName("Fist").GetComponent<Image>().color = GameObject.Find("FistPanel").ChildByName("Panel").GetComponent<Image>().color;
+                        if (Convert.ToBoolean(SettingRegistry.idToSetting["ARTIFACT_noweapons"].value))
+                        {
+                            try
+                            {
+                                CustomWeaponPanel.ChildByName("Panel").ChildByName("Gun").GetComponent<Image>().sprite = MonoSingleton<WeaponHUD>.Instance.gameObject.GetComponent<Image>().sprite;
+                                CustomWeaponPanel.ChildByName("Panel").ChildByName("Gun").GetComponent<Image>().color = MonoSingleton<WeaponHUD>.Instance.gameObject.GetComponent<Image>().color;
+                            } catch { /* fuck it, we ball. */ }
+                        } else
+                        {
+                            CustomWeaponPanel.ChildByName("Panel").ChildByName("Gun").SetActive(false);
+                        }
+
+                        if (Convert.ToBoolean(SettingRegistry.idToSetting["ARTIFACT_noarm"].value))
+                        {
+                            try
+                            {
+                                CustomWeaponPanel.ChildByName("Panel").ChildByName("Fist").GetComponent<Image>().color = GameObject.Find("FistPanel").ChildByName("Panel").GetComponent<Image>().color;
+                            }
+                            catch { /* fuck it, we ball. */ }
+                        }
+                        else
+                        {
+                            CustomWeaponPanel.ChildByName("Panel").ChildByName("Fist").SetActive(false);
+                        }
+
                         CustomWeaponPanel.ChildByName("Panel").ChildByName("Slider").GetComponent<Slider>().value = MonoSingleton<WeaponCharges>.Instance.raicharge;
                     }
 
-                    if (Convert.ToBoolean(SettingRegistry.idToSetting["hppanel"].value) && nm.gameObject != null)
+                    if (Convert.ToBoolean(SettingRegistry.idToSetting["hppanel"].value) && nm.gameObject != null && !HasntHappenedThisScene && !nm.dead)
                     {
                         string prefix = "";
                         string suffix = "";
@@ -510,6 +602,30 @@ namespace ULTRAKILLtweaker
 
                         PlayerInfo.ChildByName("Panel").ChildByName("HP").GetComponent<Text>().text = $"{nm.hp}{prefix} / {100 - Math.Round(nm.antiHp, 0)}{suffix}";
                         PlayerInfo.ChildByName("Panel").ChildByName("Stamina").GetComponent<Text>().text = $"{(nm.boostCharge / 100).ToString("0.00")} / 3.00";
+                    }
+
+                    if (Convert.ToBoolean(SettingRegistry.idToSetting["dps"].value) && nm.gameObject != null && !nm.dead)
+                    {
+                        float DPS = 0;
+                        // I would use foreach but you can't edit the list in foreaches
+                        for (int i = 0; i < HitsSecond.Count; i++)
+                        {
+                            Hit hit = HitsSecond[i];
+                            if ((DateTime.Now - hit.time).TotalSeconds > 1)
+                            {
+                                HitsSecond.RemoveAt(i);
+                                i--;
+                            }
+                            else 
+                            {
+                                float ActualDmg = hit.dmg;
+
+                                if(ActualDmg < 1000000 && ActualDmg > 0)
+                                    DPS += ActualDmg;
+                            }
+                        }
+
+                        DPSPanel.ChildByName("Panel").ChildByName("DPS").GetComponent<Text>().text = Math.Round(DPS, 2).ToString();
                     }
 
                     UpdateArtifact();
@@ -613,17 +729,48 @@ namespace ULTRAKILLtweaker
             {
                 if (nm != null && Instance.statman.timer)
                 {
-                    ToRemove += Time.deltaTime * 5 * Convert.ToSingle(SettingRegistry.idToSetting["artiset_fuelleak_multi"].value);
+                    ToRemove_FL += Time.deltaTime * 5 * Convert.ToSingle(SettingRegistry.idToSetting["artiset_fuelleak_multi"].value);
 
-                    if (ToRemove > 1)
+                    if (ToRemove_FL > 1)
                     {
                         nm.hp -= 1;
-                        ToRemove -= 1;
+                        ToRemove_FL -= 1;
                     }
 
                     if (nm.hp <= 0)
                     {
-                        nm.GetHurt(200, false, 1, true, true);
+                        nm.GetHurt(int.MaxValue, false, 1, true, true);
+                    }
+                }
+            }
+
+            if (!Convert.ToBoolean(SettingRegistry.idToSetting["ARTIFACT_floorlava"].value) && !nm.dead)
+            {
+                if (nm != null && Instance.statman.timer && ShouldDamage_FIL)
+                {
+                    //im not sure why it doesnt scale lmao, still damages at 0
+                    if(nm.hp >= 0 && !nm.dead)
+                        ToRemove_FIL += Time.deltaTime * 10 * Convert.ToSingle(SettingRegistry.idToSetting["artiset_floorlava_mult"].value);
+
+                    if (ToRemove_FIL > 1)
+                    {
+                        nm.hp -= 1;
+                        ToRemove_FIL -= 1;
+                    }
+
+                    if (nm.hp <= 0)
+                    {
+                        GameObject DeathExplosion = MonoSingleton<GunSetter>.Instance.shotgunPump[0].GetComponent<Shotgun>().explosion;
+                        GameObject InstExpl = Instantiate(DeathExplosion, Instance.player.transform);
+
+                        foreach (Explosion explosion in InstExpl.GetComponentsInChildren<Explosion>())
+                        {
+                            explosion.enemyDamageMultiplier = 15f;
+                            explosion.maxSize *= 15;
+                            explosion.damage = 0;
+                        }
+
+                        nm.GetHurt(int.MaxValue, false, 1, true);
                     }
                 }
             }
@@ -653,7 +800,7 @@ namespace ULTRAKILLtweaker
         public void InitReset()
         {
             GameObject hud = player.ChildByName("Main Camera").ChildByName("HUD Camera").ChildByName("HUD");
-            if (Convert.ToBoolean(SettingRegistry.idToSetting["forcegun"].value))
+            if (Convert.ToBoolean(SettingRegistry.idToSetting["forcegun"].value) || Convert.ToBoolean(SettingRegistry.idToSetting["weapanel"].value)) // weapanel needs the thing to exist
             {
                 hud.ChildByName("GunCanvas").ChildByName("GunPanel").SetActive(true);
             }
@@ -668,6 +815,7 @@ namespace ULTRAKILLtweaker
         {
             // Set instances
             player = GameObject.Find("Player");
+            player.ChildByName("GroundCheck").AddComponent<TouchingGround>();
             nm = FindObjectOfType<NewMovement>();
             GameObject hud = player.ChildByName("Main Camera").ChildByName("HUD Camera").ChildByName("HUD");
 
@@ -678,13 +826,23 @@ namespace ULTRAKILLtweaker
             CyberGrind.ChildByName("Panel").ChildByName("Kills").GetComponent<Text>().text = "0";
             CyberGrind.ChildByName("Panel").ChildByName("Style").GetComponent<Text>().text = "0";
 
-            #region Stuff that happens, on player spawn, for the settings
+            #region Stuff that happens on player spawn, for the settings
             if (Convert.ToSingle(SettingRegistry.idToSetting["uiscale"].value) != 100)
             {
-                foreach (GameObject go in hud.ChildrenList())
-                {
-                    go.transform.localScale = go.transform.localScale * Convert.ToSingle(SettingRegistry.idToSetting["uiscale"].value) / 100;
-                }
+                GameObject go = hud.ChildByName("GunCanvas");
+                go.transform.localScale = go.transform.localScale * Convert.ToSingle(SettingRegistry.idToSetting["uiscale"].value) / 100;
+            }
+
+            if (Convert.ToSingle(SettingRegistry.idToSetting["uiscalestyle"].value) != 100)
+            {
+                GameObject go = hud.ChildByName("StyleCanvas");
+                go.transform.localScale = go.transform.localScale * Convert.ToSingle(SettingRegistry.idToSetting["uiscalestyle"].value) / 100;
+            }
+
+            if (Convert.ToSingle(SettingRegistry.idToSetting["uiscaleresults"].value) != 100)
+            {
+                GameObject go = hud.ChildByName("FinishCanvas");
+                go.transform.localScale = go.transform.localScale * Convert.ToSingle(SettingRegistry.idToSetting["uiscaleresults"].value) / 100;
             }
 
             if (!Convert.ToBoolean(SettingRegistry.idToSetting["ARTIFACT_water"].value))
@@ -739,7 +897,8 @@ namespace ULTRAKILLtweaker
             {
                 DiceRoll.SetActive(true);
             }
-            
+
+            DPSPanel.SetActive(Convert.ToBoolean(SettingRegistry.idToSetting["dps"].value));
             Speedometer.SetActive(Convert.ToBoolean(SettingRegistry.idToSetting["speedometer"].value));
             CustomWeaponPanel.SetActive(Convert.ToBoolean(SettingRegistry.idToSetting["weapanel"].value));
             PlayerInfo.SetActive(Convert.ToBoolean(SettingRegistry.idToSetting["hppanel"].value));
@@ -749,18 +908,27 @@ namespace ULTRAKILLtweaker
                 player.ChildByName("Main Camera").ChildByName("Punch").SetActive(false);
             }
 
-            if (Convert.ToBoolean(SettingRegistry.idToSetting["weapanel"].value))
+            if (Convert.ToBoolean(SettingRegistry.idToSetting["weapanel"].value) || Convert.ToBoolean(SettingRegistry.idToSetting["hppanel"].value))
             {
-                Speedometer.ChildByName("Panel").transform.position += new Vector3(0, 68.5f, 0);
+                Speedometer.ChildByName("Panel").transform.position += new Vector3(0, (68.5f / 1080f) * Screen.height, 0);
+                DPSPanel.ChildByName("Panel").transform.position += new Vector3(0, (68.5f / 1080f) * Screen.height, 0);
+            }
+
+            if(Convert.ToBoolean(SettingRegistry.idToSetting["speedometer"].value))
+            {
+                DPSPanel.ChildByName("Panel").transform.position += new Vector3((274f / 1920f) * Screen.width, 0, 0);
             }
 
             if (Convert.ToBoolean(SettingRegistry.idToSetting["hppanel"].value))
             {
-                CustomWeaponPanel.ChildByName("Panel").transform.position += new Vector3(274, 0, 0);
+                CustomWeaponPanel.ChildByName("Panel").transform.position += new Vector3((274f / 1920f) * Screen.width, 0, 0);
             }
 
             if (CustomWeaponPanel.activeSelf == true)
                 CustomWeaponPanel.ChildByName("Panel").ChildByName("Gun").transform.localScale += new Vector3(0, 0.5f, 0);
+
+            if (Convert.ToBoolean(SettingRegistry.idToSetting["cybergrindnoscores"].value))
+                UKAPI.DisableCyberGrindSubmission($"UKTW: CG score tweak disabled");
 
             #endregion
         }
@@ -868,6 +1036,90 @@ namespace ULTRAKILLtweaker
         #endregion
 
         #region Harmony Patches
+
+        [HarmonyPatch(typeof(EnemyIdentifier), "Start")]
+        public static class HmmTodayIWillUndergoMitosis
+        {
+            public static void Prefix(EnemyIdentifier __instance)
+            {
+                if (!__instance.gameObject.name.Contains("(MITOSIS)"))
+                {
+                    Console.WriteLine($"Prefix {__instance.gameObject.name}");
+                    if (!Convert.ToBoolean(SettingRegistry.idToSetting["ARTIFACT_mitosis"].value))
+                    {
+                        Console.WriteLine($"Mitosis {__instance.gameObject.name}");
+                        for (int i = 0; i < Convert.ToSingle(SettingRegistry.idToSetting["artiset_mitosis_amount"].value)-1; i++)
+                        {
+                            Console.WriteLine($"Iterate {__instance.gameObject.name}, {i}");
+                            GameObject obj = Instantiate(__instance.gameObject, __instance.transform.parent);
+                            obj.name = __instance.gameObject.name + "(MITOSIS)";
+                            obj.transform.position = __instance.transform.position;
+                            //obj.AddComponent<MitosisController>();
+                            //obj.GetComponent<MitosisController>().SetBase(__instance.gameObject);
+                        }
+                    }
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(Skull), "Start")]
+        public static class Florpify
+        {
+            public static void Postfix(Skull __instance)
+            {
+                if (Convert.ToBoolean(SettingRegistry.idToSetting["legally_distinct_florp"].value)) 
+                {
+                    Renderer renderer = __instance.gameObject.GetComponent<Renderer>();
+                    if (renderer != null)
+                    {
+                        string Florp;
+                        switch (__instance.GetComponent<ItemIdentifier>().itemType)
+                        {
+                            case ItemType.SkullBlue:
+                                Florp = "Blue";
+                                break;
+
+                            case ItemType.SkullRed:
+                                Florp = "Red";
+                                break;
+
+                            default:
+                                return;
+                        }
+
+                        renderer.enabled = false;
+
+                        Dictionary<string, string> FLORP_NameToGoName = new Dictionary<string, string>()
+                        {
+                            { "Blue", "Blue Florp" },
+                            { "Red", "Red Florp" }
+                        };
+
+                        GameObject fLORP = Instantiate(Instance.UIBundle.LoadAsset<GameObject>(FLORP_NameToGoName[Florp]), renderer.transform);
+                    }
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(NewMovement), nameof(NewMovement.GetHurt))]
+        public static class OnPlayerHit
+        {
+            public static void Postfix()
+            {
+                if (Convert.ToBoolean(SettingRegistry.idToSetting["explorsion"].value) && Instance.nm.hp <= 0)
+                {
+                    GameObject DeathExplosion = MonoSingleton<GunSetter>.Instance.shotgunPump[0].GetComponent<Shotgun>().explosion;
+                    GameObject InstExpl = Instantiate(DeathExplosion, Instance.player.transform);
+
+                    foreach (Explosion explosion in InstExpl.GetComponentsInChildren<Explosion>())
+                    {
+                        explosion.enemyDamageMultiplier = 15f;
+                        explosion.maxSize *= 15;
+                        explosion.damage = 0;
+                    }
+                }
+            }
+        }
 
         [HarmonyPatch(typeof(BossHealthBar), "Awake")]
         public static class TankAwake
@@ -1158,5 +1410,19 @@ namespace ULTRAKILLtweaker
             }
         }
     #endregion
+
+    public class Hit
+    {
+        public DateTime time;
+        public EnemyIdentifier eid;
+        public float dmg;
+
+        public Hit(EnemyIdentifier eid, float dmg)
+        {
+            this.eid = eid;
+            this.dmg = dmg;
+            this.time = DateTime.Now;
+        }
+    }
 }
 
