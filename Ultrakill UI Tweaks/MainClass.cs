@@ -116,6 +116,7 @@ namespace ULTRAKILLtweaker
             harmony.PatchAll(typeof(TankAwake));
             harmony.PatchAll(typeof(OnPlayerHit));
             harmony.PatchAll(typeof(Florpify));
+            harmony.PatchAll(typeof(HmmTodayIWillUndergoMitosis));
 
             SceneManager.sceneLoaded += OnSceneWasLoaded;
 
@@ -183,7 +184,7 @@ namespace ULTRAKILLtweaker
                 statman = GameObject.Find("StatsManager").GetComponent<StatsManager>();
             } else
             {
-                Time.deltaTime = 1;
+                Time.timeScale = 1;
             }
 
             if (scene.name != "Main Menu" && scene.name != "Intro")
@@ -360,7 +361,9 @@ namespace ULTRAKILLtweaker
             SettingRegistry.settings.Add(new ToggleSetting("seeviewmodel", Pages[0].PageContent().ChildByName("No Viewmodel"), false, true));
             SettingRegistry.settings.Add(new ToggleSetting("dmgsub", Pages[0].PageContent().ChildByName("Damage Sign"), false, true));
 
-            SettingRegistry.settings.Add(new SliderSetting("uiscale", Pages[1].PageContent().ChildByName("UI Scale"), 0, 110, 100, true, "{0}%", true));
+            SettingRegistry.settings.Add(new SliderSetting("uiscale", Pages[1].PageContent().ChildByName("UI Scale (HP)"), 0, 110, 100, true, "{0}%", true));
+            SettingRegistry.settings.Add(new SliderSetting("uiscalestyle", Pages[1].PageContent().ChildByName("UI Scale (Style)"), 0, 110, 100, true, "{0}%", true));
+            SettingRegistry.settings.Add(new SliderSetting("uiscaleresults", Pages[1].PageContent().ChildByName("UI Scale (Results)"), 0, 100, 100, true, "{0}%", true));
             SettingRegistry.settings.Add(new ToggleSetting("forcegun", Pages[1].PageContent().ChildByName("Force Gun Modal"), false, true));
             SettingRegistry.settings.Add(new ToggleSetting("fpscounter", Pages[1].PageContent().ChildByName("FPS"), false, true));
 
@@ -391,6 +394,7 @@ namespace ULTRAKILLtweaker
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_fuelleak", TweakerMenu.ChildByName("Modifiers").ChildByName("Fuel Leak"), false, true, "Fuel Leak", "Blood is actually fuel, and gets used over time. Heal before all of your HP runs out."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_whiphard", TweakerMenu.ChildByName("Modifiers").ChildByName("WhipFix"), true, true, "Whiplash Fix", "Reduce hard damage from whiplash use, or get rid of it entirely."));
             SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_floorlava", TweakerMenu.ChildByName("Modifiers").ChildByName("FloorIsLava"), false, true, "Floor Is Lava", "You are damaged when grounded. Based on a mod by <b>nptnk#0001</b>."));
+            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_mitosis", TweakerMenu.ChildByName("Modifiers").ChildByName("Mitosis"), true, true, "Mitosis", "Enemies are duplicated. Idea from Vera in the Ultrakill Discord."));
 
             SettingRegistry.settings.Add(new SliderSetting("artiset_fuelleak_multi", TweakerMenu.ChildByName("Modifiers").ChildByName("Fuel Leak").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Damage Drain"), 0.1f, 2, 1, false, "{0}x"));
             SettingRegistry.settings.Add(new SliderSetting("artiset_noHP_hpamount", TweakerMenu.ChildByName("Modifiers").ChildByName("Fragility").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("HP"), 1, 100, 1, true, "{0} HP"));
@@ -402,6 +406,7 @@ namespace ULTRAKILLtweaker
             SettingRegistry.settings.Add(new SliderSetting("artiset_whip_hard_mult", TweakerMenu.ChildByName("Modifiers").ChildByName("WhipFix").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 0f, 2f, 0.5f, false, "{0}x"));
             SettingRegistry.settings.Add(new SliderSetting("artiset_floorlava_mult", TweakerMenu.ChildByName("Modifiers").ChildByName("FloorIsLava").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 0.1f, 20, 1, false, "{0}x"));
             SettingRegistry.settings.Add(new SliderSetting("artiset_floorlava_time", TweakerMenu.ChildByName("Modifiers").ChildByName("FloorIsLava").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Wait"), 0f, 5, 0, false, "{0}s"));
+            SettingRegistry.settings.Add(new SliderSetting("artiset_mitosis_amount", TweakerMenu.ChildByName("Modifiers").ChildByName("Mitosis").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 2, 10, 2, true, "{0}x"));
             #endregion
 
             // This sets the text to show where your custom music directory is.
@@ -743,7 +748,9 @@ namespace ULTRAKILLtweaker
             {
                 if (nm != null && Instance.statman.timer && ShouldDamage_FIL)
                 {
-                    ToRemove_FIL += Time.deltaTime * 10 * Convert.ToSingle(SettingRegistry.idToSetting["artiset_floorlava_mult"].value);
+                    //im not sure why it doesnt scale lmao, still damages at 0
+                    if(nm.hp >= 0 && !nm.dead)
+                        ToRemove_FIL += Time.deltaTime * 10 * Convert.ToSingle(SettingRegistry.idToSetting["artiset_floorlava_mult"].value);
 
                     if (ToRemove_FIL > 1)
                     {
@@ -760,7 +767,7 @@ namespace ULTRAKILLtweaker
                         {
                             explosion.enemyDamageMultiplier = 15f;
                             explosion.maxSize *= 15;
-                            explosion.damage = int.MaxValue;
+                            explosion.damage = 0;
                         }
 
                         nm.GetHurt(int.MaxValue, false, 1, true);
@@ -822,10 +829,20 @@ namespace ULTRAKILLtweaker
             #region Stuff that happens on player spawn, for the settings
             if (Convert.ToSingle(SettingRegistry.idToSetting["uiscale"].value) != 100)
             {
-                foreach (GameObject go in hud.ChildrenList())
-                {
-                    go.transform.localScale = go.transform.localScale * Convert.ToSingle(SettingRegistry.idToSetting["uiscale"].value) / 100;
-                }
+                GameObject go = hud.ChildByName("GunCanvas");
+                go.transform.localScale = go.transform.localScale * Convert.ToSingle(SettingRegistry.idToSetting["uiscale"].value) / 100;
+            }
+
+            if (Convert.ToSingle(SettingRegistry.idToSetting["uiscalestyle"].value) != 100)
+            {
+                GameObject go = hud.ChildByName("StyleCanvas");
+                go.transform.localScale = go.transform.localScale * Convert.ToSingle(SettingRegistry.idToSetting["uiscalestyle"].value) / 100;
+            }
+
+            if (Convert.ToSingle(SettingRegistry.idToSetting["uiscaleresults"].value) != 100)
+            {
+                GameObject go = hud.ChildByName("FinishCanvas");
+                go.transform.localScale = go.transform.localScale * Convert.ToSingle(SettingRegistry.idToSetting["uiscaleresults"].value) / 100;
             }
 
             if (!Convert.ToBoolean(SettingRegistry.idToSetting["ARTIFACT_water"].value))
@@ -891,20 +908,20 @@ namespace ULTRAKILLtweaker
                 player.ChildByName("Main Camera").ChildByName("Punch").SetActive(false);
             }
 
-            if (Convert.ToBoolean(SettingRegistry.idToSetting["weapanel"].value))
+            if (Convert.ToBoolean(SettingRegistry.idToSetting["weapanel"].value) || Convert.ToBoolean(SettingRegistry.idToSetting["hppanel"].value))
             {
-                Speedometer.ChildByName("Panel").transform.position += new Vector3(0, 68.5f, 0);
-                DPSPanel.ChildByName("Panel").transform.position += new Vector3(0, 68.5f, 0);
+                Speedometer.ChildByName("Panel").transform.position += new Vector3(0, (68.5f / 1080f) * Screen.height, 0);
+                DPSPanel.ChildByName("Panel").transform.position += new Vector3(0, (68.5f / 1080f) * Screen.height, 0);
             }
 
             if(Convert.ToBoolean(SettingRegistry.idToSetting["speedometer"].value))
             {
-                DPSPanel.ChildByName("Panel").transform.position += new Vector3(274, 0, 0);
+                DPSPanel.ChildByName("Panel").transform.position += new Vector3((274f / 1920f) * Screen.width, 0, 0);
             }
 
             if (Convert.ToBoolean(SettingRegistry.idToSetting["hppanel"].value))
             {
-                CustomWeaponPanel.ChildByName("Panel").transform.position += new Vector3(274, 0, 0);
+                CustomWeaponPanel.ChildByName("Panel").transform.position += new Vector3((274f / 1920f) * Screen.width, 0, 0);
             }
 
             if (CustomWeaponPanel.activeSelf == true)
@@ -1020,6 +1037,31 @@ namespace ULTRAKILLtweaker
 
         #region Harmony Patches
 
+        [HarmonyPatch(typeof(EnemyIdentifier), "Start")]
+        public static class HmmTodayIWillUndergoMitosis
+        {
+            public static void Prefix(EnemyIdentifier __instance)
+            {
+                if (!__instance.gameObject.name.Contains("(MITOSIS)"))
+                {
+                    Console.WriteLine($"Prefix {__instance.gameObject.name}");
+                    if (!Convert.ToBoolean(SettingRegistry.idToSetting["ARTIFACT_mitosis"].value))
+                    {
+                        Console.WriteLine($"Mitosis {__instance.gameObject.name}");
+                        for (int i = 0; i < Convert.ToSingle(SettingRegistry.idToSetting["artiset_mitosis_amount"].value)-1; i++)
+                        {
+                            Console.WriteLine($"Iterate {__instance.gameObject.name}, {i}");
+                            GameObject obj = Instantiate(__instance.gameObject, __instance.transform.parent);
+                            obj.name = __instance.gameObject.name + "(MITOSIS)";
+                            obj.transform.position = __instance.transform.position;
+                            //obj.AddComponent<MitosisController>();
+                            //obj.GetComponent<MitosisController>().SetBase(__instance.gameObject);
+                        }
+                    }
+                }
+            }
+        }
+
         [HarmonyPatch(typeof(Skull), "Start")]
         public static class Florpify
         {
@@ -1064,7 +1106,7 @@ namespace ULTRAKILLtweaker
         {
             public static void Postfix()
             {
-                if (Convert.ToBoolean(SettingRegistry.idToSetting["explorsion"].value) && Instance.nm.dead)
+                if (Convert.ToBoolean(SettingRegistry.idToSetting["explorsion"].value) && Instance.nm.hp <= 0)
                 {
                     GameObject DeathExplosion = MonoSingleton<GunSetter>.Instance.shotgunPump[0].GetComponent<Shotgun>().explosion;
                     GameObject InstExpl = Instantiate(DeathExplosion, Instance.player.transform);
@@ -1073,7 +1115,7 @@ namespace ULTRAKILLtweaker
                     {
                         explosion.enemyDamageMultiplier = 15f;
                         explosion.maxSize *= 15;
-                        explosion.damage = int.MaxValue;
+                        explosion.damage = 0;
                     }
                 }
             }

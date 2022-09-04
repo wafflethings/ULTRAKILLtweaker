@@ -94,6 +94,8 @@ namespace ULTRAKILLtweaker
 
         public static System.Collections.IEnumerator PatchTextures()
         {
+            yield return null;
+            /*
             yield return new WaitForSeconds(3f);
 
             foreach (GameObject obj in GameObject.FindObjectsOfType<GameObject>())
@@ -103,6 +105,7 @@ namespace ULTRAKILLtweaker
                     obj.AddComponent<TextureOverwatch>();
                 }
             }
+            */
 
             #region Old method for patching, slow and bad, I'm just keeping it in case I need it
             /*
