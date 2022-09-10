@@ -456,17 +456,16 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ArtifactHover.cs" />
-    <Compile Include="BlessWhenFar.cs" />
-    <Compile Include="EnableDisableEvent.cs" />
-    <Compile Include="Freecam.cs" />
+    <Compile Include="Components\ArtifactHover.cs" />
+    <Compile Include="Components\BlessWhenFar.cs" />
+    <Compile Include="Components\EnableDisableEvent.cs" />
+    <Compile Include="Components\Freecam.cs" />
     <Compile Include="MainClass.cs" />
-    <Compile Include="MitosisController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResourcePack.cs" />
-    <Compile Include="Settings.cs" />
-    <Compile Include="TextureOverwatch.cs" />
-    <Compile Include="TouchingGround.cs" />
+    <Compile Include="Settings\Settings.cs" />
+    <Compile Include="Components\TextureOverwatch.cs" />
+    <Compile Include="Components\TouchingGround.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
