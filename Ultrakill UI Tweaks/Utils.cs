@@ -8,12 +8,37 @@ using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
+using ULTRAKILLtweaker;
 using UnityEngine;
 
 namespace FallFactory
 {
     static class Utils
     {
+        public static T GetSetting<T>(string ID)
+        {
+            bool arti = SettingRegistry.idToSetting[ID].GetType() == typeof(ArtifactSetting);
+
+            if (typeof(T) == typeof(bool))
+            {
+                if (arti)
+                {
+                    return (T)(object)!Convert.ToBoolean(SettingRegistry.idToSetting[ID].value);
+                }
+                else
+                {
+                    return (T)(object)Convert.ToBoolean(SettingRegistry.idToSetting[ID].value);
+                }
+            }
+
+            if (typeof(T) == typeof(float))
+            {
+                return (T)(object)Convert.ToSingle(SettingRegistry.idToSetting[ID].value);
+            }
+
+            return default(T);
+        }
+
         public static string GameDirectory()
         {
             string path = Application.dataPath;
@@ -74,6 +99,28 @@ namespace FallFactory
                 }
             }
             return null;
+        }
+
+        public static void SetPrivate<T>(T obj, string property, object val, bool log = false)
+        {
+            foreach(FieldInfo fi in obj.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic))
+            {
+                if(log)
+                    Debug.Log($"FIELD COMP: {fi.Name} == {property}.");
+
+                if(fi.Name == property)
+                {
+                    fi.SetValue(obj, val);
+                    break;
+                }
+            }
+        }
+
+        public static object GetPrivate<T>(T instance, string fieldName)
+        {
+            BindingFlags bindFlags = BindingFlags.Instance | BindingFlags.NonPublic;
+            FieldInfo field = typeof(T).GetField(fieldName, bindFlags);
+            return field.GetValue(instance);
         }
 
         public static List<GameObject> FindSceneObjects(string sceneName)
