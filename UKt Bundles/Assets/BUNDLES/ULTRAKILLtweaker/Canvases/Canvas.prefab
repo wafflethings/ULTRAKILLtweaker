@@ -19050,7 +19050,7 @@ MonoBehaviour:
     m_LineSpacing: 1
   m_Text: 'USED RANK DPS
 
-    (DEFAULT: 0.5)'
+    (DEFAULT: 1)'
 --- !u!1 &6512075560694688915
 GameObject:
   m_ObjectHideFlags: 0
