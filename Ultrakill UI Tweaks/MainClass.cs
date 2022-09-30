@@ -13,6 +13,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.AI;
 using UMM;
+using ULTRAKILLtweaker.Components;
 
 namespace ULTRAKILLtweaker
 {
@@ -40,7 +41,7 @@ namespace ULTRAKILLtweaker
         public static int Page = 0;
 
         // The assetbundle which all of the UKt assets are from.
-        AssetBundle UIBundle;
+        public AssetBundle UIBundle;
 
         // This will be true until Init happens, then it is set to false. If it is true, InitSceneLoad will be called on ResetWeapons.
         public static bool HasntHappenedThisScene;
@@ -118,7 +119,8 @@ namespace ULTRAKILLtweaker
                OnSceneWasLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
             }
 
-            ResourcePack.GetAllPacks();
+            UIBundle = AssetBundle.LoadFromFile(Path.Combine(Utils.GameDirectory(), @"BepInEx\UMM Mods\ULTRAKILLtweaker\tweakerassets.bundle"));
+            ResourcePack.InitPacks();
         }
 
         public override void OnModUnload()
@@ -151,6 +153,9 @@ namespace ULTRAKILLtweaker
         public static void MenuDisable()
         {
             SettingRegistry.Save();
+            PackSaving.Save();
+
+            ResourcePack.SetDicts();
 
             if(Instance.ModsChanged && SceneManager.GetActiveScene().name != "Main Menu")
                 MonoSingleton<CanvasController>.Instance.gameObject.ChildByName("PauseMenu").ChildByName("Restart Mission").GetComponent<Button>().onClick.Invoke();
@@ -219,8 +224,8 @@ namespace ULTRAKILLtweaker
                     }
                 }
             }
-
-            StartCoroutine(ResourcePack.PatchTextures());
+            if(SceneManager.GetActiveScene().name == scene.name && (ResourcePack.IDtoSpr.Count() != 0 || ResourcePack.IDtoClip.Count() != 0 || ResourcePack.IDtoTex.Count() != 0))
+                StartCoroutine(ResourcePack.PatchTextures());
         }
 
         public void OnEnemyDamage(EnemyIdentifier eid, float dmg)
@@ -339,10 +344,12 @@ namespace ULTRAKILLtweaker
             Pages = new List<GameObject>()
             {
                 TweakerMenu.ChildByName("Tweaks").ChildByName("Misc"),
+                TweakerMenu.ChildByName("Tweaks").ChildByName("Gameplay Tweaks"),
                 TweakerMenu.ChildByName("Tweaks").ChildByName("Misc HUD"),
                 TweakerMenu.ChildByName("Tweaks").ChildByName("UI Panels"),
                 TweakerMenu.ChildByName("Tweaks").ChildByName("Cybergrind"),
-                TweakerMenu.ChildByName("Tweaks").ChildByName("Fun")
+                TweakerMenu.ChildByName("Tweaks").ChildByName("Fun"),
+                TweakerMenu.ChildByName("Tweaks").ChildByName("TexPack"),
             };
 
             GameObject mods = TweakerMenu.ChildByName("Modifiers");
@@ -351,69 +358,121 @@ namespace ULTRAKILLtweaker
             SettingRegistry.settings.Clear();
             SettingRegistry.idToSetting.Clear();
 
-            SettingRegistry.settings.Add(new SliderSetting("hitstopmult", Pages[0].PageContent().ChildByName("Hitstop Multiplier"), 0, 2, 1, false, "{0}x", true));
-            SettingRegistry.settings.Add(new ToggleSetting("seeviewmodel", Pages[0].PageContent().ChildByName("No Viewmodel"), false, true));
-            SettingRegistry.settings.Add(new ToggleSetting("dmgsub", Pages[0].PageContent().ChildByName("Damage Sign"), false, true));
-            SettingRegistry.settings.Add(new ToggleSetting("nobob", Pages[0].PageContent().ChildByName("No Viewmodel Bob"), false, true));
-            SettingRegistry.settings.Add(new ToggleSetting("notilt", Pages[0].PageContent().ChildByName("No Assist Tilt"), false, true));
+            List<Setting> Settings = new List<Setting>()
+            {
+                new SliderSetting("hitstopmult", Pages[0].PageContent().ChildByName("Hitstop Multiplier"), 0, 2, 1, false, "{0}x", true),
+                new ToggleSetting("seeviewmodel", Pages[0].PageContent().ChildByName("No Viewmodel"), false, true),
+                new ToggleSetting("dmgsub", Pages[0].PageContent().ChildByName("Damage Sign"), false, true),
+                new ToggleSetting("nobob", Pages[0].PageContent().ChildByName("No Viewmodel Bob"), false, true),
+                new ToggleSetting("notilt", Pages[0].PageContent().ChildByName("No Assist Tilt"), false, true),
 
-            SettingRegistry.settings.Add(new SliderSetting("uiscalecanv", Pages[1].PageContent().ChildByName("UI Scale (Canvas)"), 0, 100, 100, true, "{0}%", true));
-            SettingRegistry.settings.Add(new SliderSetting("uiscale", Pages[1].PageContent().ChildByName("UI Scale (HP)"), 0, 110, 100, true, "{0}%", true));
-            SettingRegistry.settings.Add(new SliderSetting("uiscalestyle", Pages[1].PageContent().ChildByName("UI Scale (Style)"), 0, 110, 100, true, "{0}%", true));
-            SettingRegistry.settings.Add(new SliderSetting("uiscaleresults", Pages[1].PageContent().ChildByName("UI Scale (Results)"), 0, 100, 100, true, "{0}%", true));
-            SettingRegistry.settings.Add(new SliderSetting("uiscaleboss", Pages[1].PageContent().ChildByName("BossbarSc"), 0, 100, 100, true, "{0}%", true));
-            SettingRegistry.settings.Add(new ToggleSetting("forcegun", Pages[1].PageContent().ChildByName("Force Gun Modal"), false, true));
-            SettingRegistry.settings.Add(new ToggleSetting("fpscounter", Pages[1].PageContent().ChildByName("FPS"), false, true));
+                new ToggleSetting("instq", Pages[1].PageContent().ChildByName("Instant Q"), false, true),
 
-            SettingRegistry.settings.Add(new ToggleSetting("hppanel", Pages[2].PageContent().ChildByName("Info Panel"), false, true));
-            SettingRegistry.settings.Add(new ToggleSetting("weapanel", Pages[2].PageContent().ChildByName("Weapon Panel"), false, true));
-            SettingRegistry.settings.Add(new ToggleSetting("dps", Pages[2].PageContent().ChildByName("DPS panel"), false, true));
-            SettingRegistry.settings.Add(new ToggleSetting("speedometer", Pages[2].PageContent().ChildByName("Speedometer"), false, true));
+                new SliderSetting("uiscalecanv", Pages[2].PageContent().ChildByName("UI Scale (Canvas)"), 0, 100, 100, true, "{0}%", true),
+                new SliderSetting("uiscale", Pages[2].PageContent().ChildByName("UI Scale (HP)"), 0, 110, 100, true, "{0}%", true),
+                new SliderSetting("uiscalestyle", Pages[2].PageContent().ChildByName("UI Scale (Style)"), 0, 110, 100, true, "{0}%", true),
+                new SliderSetting("uiscaleresults", Pages[2].PageContent().ChildByName("UI Scale (Results)"), 0, 100, 100, true, "{0}%", true),
+                new SliderSetting("uiscaleboss", Pages[2].PageContent().ChildByName("BossbarSc"), 0, 100, 100, true, "{0}%", true),
+                new ToggleSetting("forcegun", Pages[2].PageContent().ChildByName("Force Gun Modal"), false, true),
+                new ToggleSetting("fpscounter", Pages[2].PageContent().ChildByName("FPS"), false, true),
 
-            SettingRegistry.settings.Add(new ToggleSetting("cybergrindstats", Pages[3].PageContent().ChildByName("Cybergrind Stats"), false, true));
-            SettingRegistry.settings.Add(new ToggleSetting("cybergrindmusic", Pages[3].PageContent().ChildByName("CybergrindMusic"), false, true));
-            SettingRegistry.settings.Add(new ToggleSetting("cybergrindnoscores", Pages[3].PageContent().ChildByName("Disable Scores"), false, true));
+                new ToggleSetting("hppanel", Pages[3].PageContent().ChildByName("Info Panel"), false, true),
+                new ToggleSetting("weapanel", Pages[3].PageContent().ChildByName("Weapon Panel"), false, true),
+                new ToggleSetting("dps", Pages[3].PageContent().ChildByName("DPS panel"), false, true),
+                new ToggleSetting("speedometer", Pages[3].PageContent().ChildByName("Speedometer"), false, true),
 
-            SettingRegistry.settings.Add(new ToggleSetting("explorsion", Pages[4].PageContent().ChildByName("ExplodeDeath"), false, true));
-            SettingRegistry.settings.Add(new ToggleSetting("legally_distinct_florp", Pages[4].PageContent().ChildByName("FlorpSkull"), false, true));
+                new ToggleSetting("cybergrindstats", Pages[4].PageContent().ChildByName("Cybergrind Stats"), false, true),
+                new ToggleSetting("cybergrindmusic", Pages[4].PageContent().ChildByName("CybergrindMusic"), false, true),
+                new ToggleSetting("cybergrindnoscores", Pages[4].PageContent().ChildByName("Disable Scores"), false, true),
 
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_sandify", mods.ChildByName("Sandify"), false, true, "Sandify", "Every enemy gets covered in sand. Parrying is the only way to heal."));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_noHP", mods.ChildByName("Fragility"), false, true, "Fragility", "You only have 1 HP - if you get hit, you die."));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_glass", mods.ChildByName("Glass"), true, true, "Glass", "Deal two times the damage - at the cost of 70% of your health."));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_superhot", mods.ChildByName("Superhot"), true, true, "UltraHot", "Time only moves when you move."));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_tank", mods.ChildByName("Tankify"), false, true, "Tankify", "Every enemy gets two times the health."));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_distance", mods.ChildByName("Distance"), false, true, "Close Quarters", "Enemies become blessed when too far."));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_noweapons", mods.ChildByName("No Weapons"), false, true, "Empty Handed", "No weapons, punch your enemies to death. Good luck beating P-1."));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_nostamina", mods.ChildByName("NoStamina"), false, true, "Lethargy", "V1 is tired, and has no stamina. No sliding, dash-jumps, or power-slams."));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_diceroll", mods.ChildByName("Random"), true, true, "Dice-Roll", "Every 30 seconds, your weapon loadout is randomised. Includes scrapped and unowned weapons! (if the current update has any)"));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_water", mods.ChildByName("Water"), true, true, "Submerged", "Every level is flooded with water."));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_gofast", mods.ChildByName("GoFast"), true, true, "Speed", "You run at 2 times the speed. Enemy speed is multiplied by 7.5 to keep up."));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_noarm", mods.ChildByName("No Arms"), false, true, "Disarmed", "V1 has no arms. You can't punch, whiplash, or parry."));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_fuelleak", mods.ChildByName("Fuel Leak"), false, true, "Fuel Leak", "Blood is actually fuel, and gets used over time. Heal before all of your HP runs out."));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_whiphard", mods.ChildByName("WhipFix"), true, true, "Whiplash Fix", "Reduce hard damage from whiplash use, or get rid of it entirely."));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_floorlava", mods.ChildByName("FloorIsLava"), false, true, "Floor Is Lava", "You are damaged when grounded. Based on a mod by <b>nptnk#0001</b>."));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_mitosis", mods.ChildByName("Mitosis"), true, true, "Mitosis", "Enemies are duplicated. You can go above 10x by editing <b>settings.kel</b>. <color=red>THIS WILL SLAUGTHER YOUR FPS.</color> Idea from Vera in the UK Discord."));
-            SettingRegistry.settings.Add(new ArtifactSetting("ARTIFACT_fresh", mods.ChildByName("Fresh"), true, true, "Freshness", "You get hurt whenever your style rank is below a certain amount. Very configurable."));
+                new ToggleSetting("explorsion", Pages[5].PageContent().ChildByName("ExplodeDeath"), false, true),
+                new ToggleSetting("legally_distinct_florp", Pages[5].PageContent().ChildByName("FlorpSkull"), false, true),
 
-            SettingRegistry.settings.Add(new SliderSetting("artiset_fuelleak_multi", mods.ChildByName("Fuel Leak").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Damage Drain"), 0.1f, 2, 1, false, "{0}x"));
-            SettingRegistry.settings.Add(new SliderSetting("artiset_noHP_hpamount", mods.ChildByName("Fragility").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("HP"), 1, 100, 1, true, "{0} HP"));
-            SettingRegistry.settings.Add(new SliderSetting("artiset_diceroll_timereset", mods.ChildByName("Random").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Time"), 5, 300, 30, true, "{0}s"));
-            SettingRegistry.settings.Add(new SliderSetting("artiset_distance_distfromplayer", mods.ChildByName("Distance").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Distance"), 5, 50, 15, true, "{0} u"));
-            SettingRegistry.settings.Add(new SliderSetting("artiset_gofast_player", mods.ChildByName("GoFast").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Player"), 0.5f, 7.5f, 2, false, "{0}x"));
-            SettingRegistry.settings.Add(new SliderSetting("artiset_gofast_enemy", mods.ChildByName("GoFast").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Enemy"), 0.5f, 7.5f, 7.5f, false, "{0}x"));
-            SettingRegistry.settings.Add(new SliderSetting("artiset_tankify_mult", mods.ChildByName("Tankify").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 1f, 10f, 2f, false, "{0}x"));
-            SettingRegistry.settings.Add(new SliderSetting("artiset_whip_hard_mult", mods.ChildByName("WhipFix").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 0f, 2f, 0.5f, false, "{0}x"));
-            SettingRegistry.settings.Add(new SliderSetting("artiset_floorlava_mult", mods.ChildByName("FloorIsLava").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 0.1f, 20, 1, false, "{0}x"));
-            SettingRegistry.settings.Add(new SliderSetting("artiset_floorlava_time", mods.ChildByName("FloorIsLava").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Wait"), 0f, 5, 0, false, "{0}s"));
-            SettingRegistry.settings.Add(new SliderSetting("artiset_mitosis_amount", mods.ChildByName("Mitosis").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 2, 10, 2, true, "{0}x"));
-            SettingRegistry.settings.Add(new SliderSetting("artiset_fresh_fr", mods.ChildByName("Fresh").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Fresh"), 0, 100, 0, true, "{0}"));
-            SettingRegistry.settings.Add(new SliderSetting("artiset_fresh_us", mods.ChildByName("Fresh").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Used"), 0, 100, 1, true, "{0}"));
-            SettingRegistry.settings.Add(new SliderSetting("artiset_fresh_st", mods.ChildByName("Fresh").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Stale"), 0, 100, 2, true, "{0}"));
-            SettingRegistry.settings.Add(new SliderSetting("artiset_fresh_du", mods.ChildByName("Fresh").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Dull"), 0, 100, 5, true, "{0}"));
+                new ArtifactSetting("ARTIFACT_sandify", mods.ChildByName("Sandify"), false, true, 
+                    "Sandify", "Every enemy gets covered in sand. Parrying is the only way to heal."),
+
+                new ArtifactSetting("ARTIFACT_noHP", mods.ChildByName("Fragility"), false, true,
+                    "Fragility", "You only have 1 HP - if you get hit, you die.", 
+                    new List<string>() {"artiset_noHP_hpamount"}),
+
+                new ArtifactSetting("ARTIFACT_glass", mods.ChildByName("Glass"), true, true,
+                    "Glass", "Deal two times the damage - at the cost of 70% of your health."),
+
+                new ArtifactSetting("ARTIFACT_superhot", mods.ChildByName("Superhot"), true, true,
+                    "UltraHot", "Time only moves when you move."),
+
+                new ArtifactSetting("ARTIFACT_tank", mods.ChildByName("Tankify"), false, true,
+                    "Tankify", "Every enemy gets two times the health.", 
+                    new List<string>() {"artiset_tankify_mult"}),
+
+                new ArtifactSetting("ARTIFACT_distance", mods.ChildByName("Distance"), false, true,
+                    "Close Quarters", "Enemies become blessed when too far.", 
+                    new List<string>() {"artiset_distance_distfromplayer"}),
+
+                new ArtifactSetting("ARTIFACT_noweapons", mods.ChildByName("No Weapons"), false, true,
+                    "Empty Handed", "No weapons, punch your enemies to death. Good luck beating P-1."),
+
+                new ArtifactSetting("ARTIFACT_nostamina", mods.ChildByName("NoStamina"), false, true,
+                    "Lethargy", "V1 is tired, and has no stamina. No dash-jumps or power-slams."),
+
+                new ArtifactSetting("ARTIFACT_diceroll", mods.ChildByName("Random"), true, true,
+                    "Dice-Roll", "Every 30 seconds, your weapon loadout is randomised. Includes scrapped and unowned weapons! (if the current update has any)",
+                     new List<string>() {"artiset_diceroll_timereset"}),
+              
+                new ArtifactSetting("ARTIFACT_water", mods.ChildByName("Water"), true, true,
+                    "Submerged", "Every level is flooded with water."),
+              
+                new ArtifactSetting("ARTIFACT_gofast", mods.ChildByName("GoFast"), true, true,
+                    "Speed", "You run at 2 times the speed. Enemy speed is multiplied by 7.5 to keep up.", 
+                    new List<string>() {"artiset_gofast_player", "artiset_gofast_enemy"}), 
+              
+                new ArtifactSetting("ARTIFACT_noarm", mods.ChildByName("No Arms"), false, true,
+                    "Disarmed", "V1 has no arms. You can't punch, whiplash, or parry."),
+              
+                new ArtifactSetting("ARTIFACT_fuelleak", mods.ChildByName("Fuel Leak"), false, true,
+                    "Fuel Leak", "Blood is actually fuel, and gets used over time. Heal before all of your HP runs out.",
+                    new List<string>() {"artiset_fuelleak_multi"}),
+              
+                new ArtifactSetting("ARTIFACT_whiphard", mods.ChildByName("WhipFix"), true, true,
+                    "Whiplash Fix", "Reduce hard damage from whiplash use, or get rid of it entirely.",
+                    new List<string>() {"artiset_whip_hard_mult"}),
+              
+                new ArtifactSetting("ARTIFACT_floorlava", mods.ChildByName("FloorIsLava"), false, true,
+                    "Floor Is Lava", "You are damaged when grounded. Based on a mod by <b>nptnk#0001</b>.",
+                    new List<string>() {"artiset_floorlava_mult", "artiset_floorlava_time"}),
+              
+                new ArtifactSetting("ARTIFACT_mitosis", mods.ChildByName("Mitosis"), true, true,
+                    "Mitosis", "Enemies are duplicated. You can go above 10x by editing <b>settings.kel</b>. <color=red>THIS WILL SLAUGTHER YOUR FPS.</color> Idea from Vera in the UK Discord.",
+                    new List<string>() {"artiset_mitosis_amount"}),
+              
+                new ArtifactSetting("ARTIFACT_fresh", mods.ChildByName("Fresh"), true, true,
+                    "Freshness", "You get hurt whenever your style rank is below a certain amount. Very configurable.",
+                    new List<string>() {"artiset_fresh_fr", "artiset_fresh_us", "artiset_fresh_st", "artiset_fresh_du"}),
+
+                new SliderSetting("artiset_fuelleak_multi", mods.ChildByName("Fuel Leak").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Damage Drain"), 0.1f, 2, 1, false, "{0}x"),
+                new SliderSetting("artiset_noHP_hpamount", mods.ChildByName("Fragility").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("HP"), 1, 100, 1, true, "{0} HP"),
+                new SliderSetting("artiset_diceroll_timereset", mods.ChildByName("Random").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Time"), 5, 300, 30, true, "{0}s"),
+                new SliderSetting("artiset_distance_distfromplayer", mods.ChildByName("Distance").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Distance"), 5, 50, 15, true, "{0} u"),
+                new SliderSetting("artiset_gofast_player", mods.ChildByName("GoFast").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Player"), 0.5f, 7.5f, 2, false, "{0}x"),
+                new SliderSetting("artiset_gofast_enemy", mods.ChildByName("GoFast").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Enemy"), 0.5f, 7.5f, 7.5f, false, "{0}x"),
+                new SliderSetting("artiset_tankify_mult", mods.ChildByName("Tankify").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 1f, 10f, 2f, false, "{0}x"),
+                new SliderSetting("artiset_whip_hard_mult", mods.ChildByName("WhipFix").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 0f, 2f, 0.5f, false, "{0}x"),
+                new SliderSetting("artiset_floorlava_mult", mods.ChildByName("FloorIsLava").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 0.1f, 20, 1, false, "{0}x"),
+                new SliderSetting("artiset_floorlava_time", mods.ChildByName("FloorIsLava").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Wait"), 0f, 5, 0, false, "{0}s"),
+                new SliderSetting("artiset_mitosis_amount", mods.ChildByName("Mitosis").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Mult"), 2, 10, 2, true, "{0}x"),
+                new SliderSetting("artiset_fresh_fr", mods.ChildByName("Fresh").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Fresh"), 0, 100, 0, true, "{0}"),
+                new SliderSetting("artiset_fresh_us", mods.ChildByName("Fresh").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Used"), 0, 100, 1, true, "{0}"),
+                new SliderSetting("artiset_fresh_st", mods.ChildByName("Fresh").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Stale"), 0, 100, 2, true, "{0}"),
+                new SliderSetting("artiset_fresh_du", mods.ChildByName("Fresh").ChildByName("Extra Settings").ChildByName("SETTINGS").ChildByName("Panel").ChildByName("Dull"), 0, 100, 5, true, "{0}")
+            };
+
+            foreach(Setting set in Settings)
+                SettingRegistry.settings.Add(set);
+
             #endregion
 
             // This sets the text to show where your custom music directory is.
-            Pages[3].PageContent().ChildByName("CybergrindMusic").ChildByName("Toggle").ChildByName("Path").GetComponent<Text>().text = Path.Combine(Utils.GameDirectory(), @"BepInEx\UMM Mods\plugins\ULTRAKILLtweaker\Cybergrind Music");
+            Pages[4].PageContent().ChildByName("CybergrindMusic").ChildByName("Toggle").ChildByName("Path").GetComponent<Text>().text = Path.Combine(Utils.GameDirectory(), @"BepInEx\UMM Mods\plugins\ULTRAKILLtweaker\Cybergrind Music");
 
             foreach (Setting setting in SettingRegistry.settings)
             {
@@ -460,6 +519,25 @@ namespace ULTRAKILLtweaker
             });
             #endregion
 
+            // Set up resource pack stuff
+            ResourcePack.DisabledContent = Pages[6].ChildByName("LeftHolder").ChildByName("LeftPack").ChildByName("Viewport").ChildByName("Content");
+            ResourcePack.EnabledContent = Pages[6].ChildByName("RightHolder").ChildByName("RightPack").ChildByName("Viewport").ChildByName("Content");
+
+            foreach(ResourcePack pack in ResourcePack.Packs)
+            {
+                if (pack.metadata.ID != "NO ID, DELETE THIS PACK")
+                {
+                    GameObject go = pack.GetListEntry();
+
+                    if (pack.Enabled)
+                        go.transform.parent = ResourcePack.EnabledContent.transform;
+                    else
+                        go.transform.parent = ResourcePack.DisabledContent.transform;
+
+                    go.transform.localScale = Vector3.one;
+                }
+            }
+
             UpdatePages();
 
             TweakerMenu.SetActive(false);
@@ -488,6 +566,12 @@ namespace ULTRAKILLtweaker
         #region Stuff that happens on Update
         public void Update()
         {
+
+            if (Input.GetKeyDown(KeyCode.N))
+            {
+                StartCoroutine(ResourcePack.PatchTextures());
+            }
+
             if (OptionsMenu != null)
             {
                 #region This code is bad, have to do it because the scale/pos breaks when you set parent. Not too bad, as when it is in the correct pos/scale it doesn't happen
@@ -657,8 +741,18 @@ namespace ULTRAKILLtweaker
                     UpdateArtifact();
                 }
             }
+        }
 
-            
+        public void LateUpdate()
+        {
+            if (InputManager.Instance != null && Utils.GetSetting<bool>("instq"))
+                if (InputManager.Instance.InputSource.LastWeapon.WasPerformedThisFrame)
+                {
+                    Debug.Log("pre, pressed" + InputManager.Instance.InputSource.LastWeapon.IsPressed);
+                    ///InputManager.Instance.InputSource.LastWeapon.Trigger(false, true);
+                    Utils.SetPrivate_Prop(InputManager.Instance.InputSource.LastWeapon, "IsPressed", false, true);
+                    Debug.Log("post, pressed" + InputManager.Instance.InputSource.LastWeapon.IsPressed);
+                }
         }
 
         public void UpdateArtifact()
@@ -1091,6 +1185,66 @@ namespace ULTRAKILLtweaker
 
         #region Harmony Patches
 
+        [HarmonyPatch(typeof(Text), "OnEnable")]
+        class PatchFont
+        {
+            static void Prefix(Text __instance)
+            {
+                if (__instance.gameObject.GetComponent<ReplacementController>() == null)
+                {
+                    __instance.gameObject.AddComponent<ReplacementController>();
+
+                    foreach (ResourcePack resourcePack in ResourcePack.Packs)
+                    {
+                        if (resourcePack.Font != null && resourcePack.Enabled)
+                        {
+                            __instance.font = resourcePack.Font;
+                            __instance.fontSize = (int)(__instance.fontSize * resourcePack.FontScale);
+                        }
+                    }
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(Material), nameof(Material.mainTexture), MethodType.Getter)]
+        class PatchRen
+        {
+            static void NotActuallyPrefix(Material __instance)
+            {
+                Debug.Log("In thing");
+
+                if (!__instance.name.Contains("_UKTSWAPPED") && SceneManager.GetActiveScene().name != "Intro")
+                {
+                    __instance.name += "_UKTSWAPPED";
+
+                    Debug.Log($"Swap attempt mainTexture: mat;{__instance.name}, tex;{__instance.mainTexture.name}");
+
+                    if (ResourcePack.IDtoTex.Keys.Contains(__instance.mainTexture.name))
+                    {
+                        __instance.mainTexture = ResourcePack.IDtoTex[__instance.mainTexture.name];
+                    }
+                    __instance.name = __instance.name.Replace("_UKTSWAPPED", "");
+                } else
+                {
+                    Debug.Log($"Embed fail mainTexture: mat;{__instance.name}");
+                }
+            }
+        }
+
+        
+        class PatchSound
+        {
+            [HarmonyPatch(typeof(AudioSource), "PlayHelper")]
+            [HarmonyPrefix]
+            static void Prefix_NoArgs(AudioSource __instance)
+            {
+                //Debug.Log("play");
+                 
+                //if (ResourcePack.IDtoClip.Keys.Contains(__instance.clip.name))
+                //    __instance.clip = ResourcePack.IDtoClip[__instance.clip.name];
+            }
+        }
+
         [HarmonyPatch(typeof(StyleHUD), nameof(StyleHUD.UpdateHUD))]
         public static class UpdateHUD
         {
@@ -1244,13 +1398,14 @@ namespace ULTRAKILLtweaker
                         if (!Convert.ToBoolean(mod.value))
                         {
                             ModAmount++;
-                            mods += ((ArtifactSetting)mod).Name.ToUpper() + ", ";
+                            mods += ((ArtifactSetting)mod).GetDetails() + ", ";
+
                         }
                     }
                 }
 
                 if(ModAmount != 0)
-                    text.text = "<size=20>+ " + mods.Substring(0, mods.Length - 2) + "</size>\n<size=10>\n</size>" + text.text;
+                    text.text = "<size=12>+ " + mods.Substring(0, mods.Length - 2) + "</size>\n<size=10>\n</size>" + text.text;
             }
         }
 

@@ -15,6 +15,22 @@ namespace FallFactory
 {
     static class Utils
     {
+        // i stole this trigger func from teamdoodz/huskvr lol shoutout to him
+        public static void Trigger(this InputActionState state, bool started, bool canceled)
+        {
+            if (started)
+            {
+                SetPrivate_Prop(state, "isPressed", true);
+                SetPrivate_Prop(state, "PerformedFrame", Time.frameCount);
+                SetPrivate_Prop(state, "PerformedTime", Time.time);
+            }
+            else if (canceled)
+            {
+                SetPrivate_Prop(state, "isPressed", false);
+                SetPrivate_Prop(state, "CancelledFrame", Time.frameCount);
+            }
+        }
+
         public static T GetSetting<T>(string ID)
         {
             bool arti = SettingRegistry.idToSetting[ID].GetType() == typeof(ArtifactSetting);
@@ -101,7 +117,7 @@ namespace FallFactory
             return null;
         }
 
-        public static void SetPrivate<T>(T obj, string property, object val, bool log = false)
+        public static void SetPrivate_Field<T>(T obj, string property, object val, bool log = false)
         {
             foreach(FieldInfo fi in obj.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic))
             {
@@ -111,6 +127,21 @@ namespace FallFactory
                 if(fi.Name == property)
                 {
                     fi.SetValue(obj, val);
+                    break;
+                }
+            }
+        }
+
+        public static void SetPrivate_Prop<T>(T obj, string property, object val, bool log = false)
+        {
+            foreach (PropertyInfo pi in obj.GetType().GetProperties(BindingFlags.Instance | BindingFlags.NonPublic))
+            {
+                if (log)
+                    Debug.Log($"FIELD COMP: {pi.Name} == {property}.");
+
+                if (pi.Name == property)
+                {
+                    pi.SetValue(obj, val);
                     break;
                 }
             }

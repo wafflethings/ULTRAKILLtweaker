@@ -100,8 +100,9 @@ namespace ULTRAKILLtweaker
         public string Description;
         public string Name;
         public bool DisableCG;
+        public List<string> Sets;
 
-        public ArtifactSetting(string SettingID, GameObject toggleobj, bool disablecg, bool settingDefaultValue, string name = "Placeholder Plugin", string desc = "Placeholder Description")
+        public ArtifactSetting(string SettingID, GameObject toggleobj, bool disablecg, bool settingDefaultValue, string name = "Placeholder Plugin", string desc = "Placeholder Description", List<string> SetIDs = null)
         {
             ID = SettingID;
             toggle = toggleobj.GetComponent<Toggle>();
@@ -109,6 +110,10 @@ namespace ULTRAKILLtweaker
             Description = desc;
             Name = name;
             DisableCG = disablecg;
+            Sets = SetIDs;
+
+            if (Sets == null)
+                Sets = new List<string>();
 
             ArtifactHover ah = toggle.gameObject.AddComponent<ArtifactHover>();
             ah.me = this;
@@ -137,6 +142,25 @@ namespace ULTRAKILLtweaker
         public override void UpdateValue()
         {
             value = toggle.isOn;
+        }
+
+        public string GetDetails()
+        {
+            string SetDetails = "(";
+
+            foreach(string str in Sets)
+            {
+                SetDetails += Utils.GetSetting<float>(str);
+                if (Sets.Last() != str)
+                    SetDetails += ", ";
+            }
+
+            SetDetails += ")";
+
+            if (SetDetails == "()")
+                SetDetails = "";
+
+            return $"{Name} {SetDetails}";
         }
 
         public override void SetValue()
