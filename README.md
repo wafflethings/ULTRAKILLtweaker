@@ -2,6 +2,9 @@
 ULTRAKILLtweaker is a mod for Ultrakill that lets you tweak various things.
 
 # Installation Instructions
+You should probably watch [this](https://www.youtube.com/watch?v=h61ZGZp7A44) tutorial by nptnk.
+If you don't want to though, here are instructions in text.
+
 1. Follow the Bepinex tutorial [here](https://www.youtube.com/watch?v=meNiXcbPh_s), up until 1:10
 2. Unzip the [UMM.zip](https://github.com/Temperz87/ultra-mod-manager/releases/) file into ULTRAKILL\BepInEx. Make sure you are using release 0.4 or later. Do not use 'Recompile for ACT-2 release', it may appear at the top but it is not the newest.
 3. Go to ULTRAKILL\BepInEx\UMM Mods and delete CustomArms.dll (unless you want the custom arms).
