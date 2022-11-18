@@ -147,10 +147,11 @@ namespace FallFactory
             }
         }
 
-        public static object GetPrivate<T>(T instance, string fieldName)
+        internal static object GetInstanceField(Type type, object instance, string fieldName)
         {
-            BindingFlags bindFlags = BindingFlags.Instance | BindingFlags.NonPublic;
-            FieldInfo field = typeof(T).GetField(fieldName, bindFlags);
+            BindingFlags bindFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
+                | BindingFlags.Static;
+            FieldInfo field = type.GetField(fieldName, bindFlags);
             return field.GetValue(instance);
         }
 

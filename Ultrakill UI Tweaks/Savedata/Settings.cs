@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ULTRAKILLtweaker.Components;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -58,12 +59,12 @@ namespace ULTRAKILLtweaker
 
         public override void UpdateValue()
         {
-            value = Math.Round(slider.value, 2);
+            value = Math.Round(slider.value, 1);
         }
 
         public override void SetValue()
         {
-            slider.value = (float)Math.Round((double)Convert.ToSingle(value), 2);
+            slider.value = (float)Math.Round((double)Convert.ToSingle(value), 1);
         }
     }
 
@@ -104,13 +105,23 @@ namespace ULTRAKILLtweaker
 
         public ArtifactSetting(string SettingID, GameObject toggleobj, bool disablecg, bool settingDefaultValue, string name = "Placeholder Plugin", string desc = "Placeholder Description", List<string> SetIDs = null)
         {
+            Debug.Log(Name);
+            Debug.Log("arti");
             ID = SettingID;
+            Debug.Log("arti ID");
+            Debug.Log(toggleobj.name); 
             toggle = toggleobj.GetComponent<Toggle>();
+            Debug.Log("arti TOGGLE");
             defaultValue = settingDefaultValue;
+            Debug.Log("arti DEFAULT");
             Description = desc;
+            Debug.Log("arti DESC");
             Name = name;
+            Debug.Log("arti NAME");
             DisableCG = disablecg;
+            Debug.Log("arti CG"); 
             Sets = SetIDs;
+            Debug.Log("arti SETIDS");
 
             if (Sets == null)
                 Sets = new List<string>();
@@ -135,6 +146,7 @@ namespace ULTRAKILLtweaker
                     toggle.enabled = true;
                 });
 
+                toggleobj.ChildByName("Extra Settings").AddComponent<EnsureCentered>();
                 toggleobj.ChildByName("Extra Settings").SetActive(false);
             }
         }
@@ -197,17 +209,24 @@ namespace ULTRAKILLtweaker
         public static List<Setting> settings = new List<Setting>();
         public static string kelPath = Path.Combine(Utils.GameDirectory(), @"BepInEx\UMM Mods\ULTRAKILLtweaker\settings.kel");
         public static char split = 'ඞ';
+        public static string CurrentFile;
 
         public static void Read()
         {
             Debug.Log($"Attempting to read file at {kelPath}.");
             Validate();
 
+            CurrentFile = "";
+
             foreach(string line in File.ReadLines(kelPath))
             {
                 string[] Data = line.Split(split);
-                idToSetting[Data[0]].value = Data[1];
-                idToSetting[Data[0]].SetValue();
+                if (idToSetting.ContainsKey(Data[0]))
+                {
+                    idToSetting[Data[0]].value = Data[1];
+                    idToSetting[Data[0]].SetValue();
+                    CurrentFile += line + "\n";
+                }
             }
         }
 
@@ -218,6 +237,10 @@ namespace ULTRAKILLtweaker
             foreach (Setting setting in settings)
             {
                 setting.UpdateValue();
+
+                if (!CurrentFile.Contains(setting.ID))
+                    setting.value = setting.defaultValue;
+
                 text += $"{setting.ID}{split}{setting.value}\n";
                 Debug.Log($"{setting.ID} saved as value {setting.value}.");
             }
