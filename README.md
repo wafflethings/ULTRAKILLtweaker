@@ -1,11 +1,6 @@
 # ULTRAKILLtweaker
 ULTRAKILLtweaker is a mod for Ultrakill that lets you tweak various things.
 
-# Donate
-If you like my mods, feel free to give me money.
-
-<a href='https://ko-fi.com/waff1e_' target='_blank'><img height='35' style='border:0px;height:46px;' src='https://az743702.vo.msecnd.net/cdn/kofi3.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com' />
-
 # Installation Instructions
 You should probably watch [this](https://www.youtube.com/watch?v=h61ZGZp7A44) tutorial by nptnk.
 If you don't want to though, here are instructions in text.
