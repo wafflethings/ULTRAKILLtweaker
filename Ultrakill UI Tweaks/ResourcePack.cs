@@ -1,5 +1,4 @@
-﻿using FallFactory;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -22,7 +21,7 @@ namespace ULTRAKILLtweaker
 
         public static void InitPacks()
         {
-            PackTemp = MainClass.Instance.UIBundle.LoadAsset<GameObject>("packtemp");
+            PackTemp = MainClass.UIBundle.LoadAsset<GameObject>("packtemp");
             foreach(string dir in Directory.GetDirectories(PacksPath))
             {
                 ResourcePack pack = new ResourcePack(dir.PathToName());
@@ -302,7 +301,7 @@ namespace ULTRAKILLtweaker
 
         public Metadata(string path)
         {
-            icon = MainClass.Instance.UIBundle.LoadAsset<Sprite>("defaultpack");
+            icon = MainClass.UIBundle.LoadAsset<Sprite>("defaultpack");
 
             if (File.Exists(Path.Combine(path, "pack.uktmeta")))
             {

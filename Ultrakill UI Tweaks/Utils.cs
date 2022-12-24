@@ -11,26 +11,10 @@ using System.Threading.Tasks;
 using ULTRAKILLtweaker;
 using UnityEngine;
 
-namespace FallFactory
+namespace ULTRAKILLtweaker
 {
     static class Utils
     {
-        // i stole this trigger func from teamdoodz/huskvr lol shoutout to him
-        public static void Trigger(this InputActionState state, bool started, bool canceled)
-        {
-            if (started)
-            {
-                SetPrivate_Prop(state, "isPressed", true);
-                SetPrivate_Prop(state, "PerformedFrame", Time.frameCount);
-                SetPrivate_Prop(state, "PerformedTime", Time.time);
-            }
-            else if (canceled)
-            {
-                SetPrivate_Prop(state, "isPressed", false);
-                SetPrivate_Prop(state, "CancelledFrame", Time.frameCount);
-            }
-        }
-
         public static T GetSetting<T>(string ID)
         {
             bool arti = SettingRegistry.idToSetting[ID].GetType() == typeof(ArtifactSetting);
@@ -191,6 +175,10 @@ namespace FallFactory
         {
             // Set the flags so that private and public fields from instances will be found
             var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+            foreach(var f in obj.GetType().GetFields(bindingFlags))
+            {
+                Debug.Log(f.Name);
+            }
             var field = obj.GetType().GetField(name, bindingFlags);
             return (T)field?.GetValue(obj);
         }
