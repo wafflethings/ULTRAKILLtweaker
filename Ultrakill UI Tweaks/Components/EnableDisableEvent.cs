@@ -9,6 +9,8 @@ namespace ULTRAKILLtweaker
 {
     public class EnableDisableEvent : MonoBehaviour
     {
+        bool FirstTime = true;
+
         public void OnDisable()
         {
             MainClass.MenuDisable();
@@ -16,7 +18,13 @@ namespace ULTRAKILLtweaker
 
         public void OnEnable()
         {
-            MainClass.MenuEnable();
+            if (!FirstTime)
+            {
+                MainClass.MenuEnable();
+            } else
+            {
+                FirstTime = false;
+            }
         }
     }
 }

@@ -22,7 +22,7 @@ namespace ULTRAKILLtweaker.Components
             GetComponent<RectTransform>().sizeDelta = new Vector2(transform.parent.GetComponent<RectTransform>().sizeDelta.x, transform.parent.GetComponent<RectTransform>().sizeDelta.y * (float)(220f / 320f));
 
             string TheFunny = SceneManager.GetActiveScene().name;
-            StatsManager sman = MainClass.Instance.statman;
+            StatsManager sman = StatsManager.Instance;
 
             if (Times.SceneToTime.ContainsKey(TheFunny))
             {

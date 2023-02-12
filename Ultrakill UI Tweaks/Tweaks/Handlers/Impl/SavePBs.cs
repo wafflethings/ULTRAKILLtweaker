@@ -74,6 +74,32 @@ namespace ULTRAKILLtweaker.Tweaks.Handlers.Impl
             {
                 ((SavePBs)MainClass.Instance.TypeToHandler[typeof(SavePBs)]).ls = __instance;
             }
+
+            [HarmonyPatch(typeof(FinalRank), nameof(FinalRank.SetTime))]
+            static void SaveIt()
+            {
+                StatsManager sm = StatsManager.Instance;
+
+                if (Times.SceneToTime.ContainsKey(SceneManager.GetActiveScene().name))
+                {
+                    if (Times.SceneToTime[SceneManager.GetActiveScene().name] > sm.seconds)
+                        Times.SceneToTime[SceneManager.GetActiveScene().name] = sm.seconds;
+
+                    if (Times.SceneToKills[SceneManager.GetActiveScene().name] < sm.kills)
+                        Times.SceneToKills[SceneManager.GetActiveScene().name] = sm.kills;
+
+                    if (Times.SceneToStyle[SceneManager.GetActiveScene().name] < sm.stylePoints)
+                        Times.SceneToStyle[SceneManager.GetActiveScene().name] = sm.stylePoints;
+                }
+                else
+                {
+                    Times.SceneToTime.Add(SceneManager.GetActiveScene().name, sm.seconds);
+                    Times.SceneToKills.Add(SceneManager.GetActiveScene().name, sm.kills);
+                    Times.SceneToStyle.Add(SceneManager.GetActiveScene().name, sm.stylePoints);
+                }
+
+                Times.Save();
+            }
         }
     }
 }

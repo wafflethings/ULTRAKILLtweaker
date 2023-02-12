@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ULTRAKILLtweaker.Tweaks.UIElements;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -20,7 +21,7 @@ namespace ULTRAKILLtweaker.Tweaks.Handlers.Impl
         public GameObject Speedometer;
 
         // All hits that have occured in the last Second
-        public List<Hit> HitsSecond = new List<Hit>();
+        public static List<Hit> HitsSecond = new List<Hit>();
 
         public NewMovement nm;
 
@@ -46,11 +47,6 @@ namespace ULTRAKILLtweaker.Tweaks.Handlers.Impl
             if (Utils.GetSetting<bool>("hppanel"))
             {
                 CustomWeaponPanel.ChildByName("Panel").transform.position += new Vector3((274f / 1920f) * Screen.width, 0, 0);
-            }
-
-            if (Utils.GetSetting<bool>("ARTIFACT_ice"))
-            {
-                nm.modForcedFrictionMultip = Utils.GetSetting<float>("artiset_ice_frict");
             }
 
             if (CustomWeaponPanel.activeSelf == true)
@@ -181,16 +177,37 @@ namespace ULTRAKILLtweaker.Tweaks.Handlers.Impl
 
         public void CreatePanels()
         {
-            PlayerInfo = Instantiate(UIPreloader.Settings["Info"]);
-            CustomWeaponPanel = Instantiate(UIPreloader.Settings["Weapons"]);
-            DPSPanel = Instantiate(UIPreloader.Settings["DPS"]);
-            Speedometer = Instantiate(UIPreloader.Settings["Speedometer"]);
+            PlayerInfo = Instantiate(UIElement.Settings["Info"]);
+            CustomWeaponPanel = Instantiate(UIElement.Settings["Weapons"]);
+            DPSPanel = Instantiate(UIElement.Settings["DPS"]);
+            Speedometer = Instantiate(UIElement.Settings["Speedometer"]);
             PanelsExist = true;
 
             DontDestroyOnLoad(PlayerInfo);
             DontDestroyOnLoad(CustomWeaponPanel);
             DontDestroyOnLoad(DPSPanel);
             DontDestroyOnLoad(Speedometer);
+        }
+
+        public class PanelPatches
+        {
+            [HarmonyPatch(typeof(EnemyIdentifier), nameof(EnemyIdentifier.DeliverDamage))]
+            [HarmonyPrefix]
+            public static void SetHealthBefore(EnemyIdentifier __instance, out float __state)
+            {
+                __state = __instance.health;
+            }
+
+            [HarmonyPatch(typeof(EnemyIdentifier), nameof(EnemyIdentifier.DeliverDamage))]
+            [HarmonyPostfix]
+            public static void DoHealthAfter(EnemyIdentifier __instance, float __state)
+            {
+                float damage = __state - __instance.health;
+                if (damage != 0f)
+                {
+                    HitsSecond.Add(new Hit(__instance, damage));
+                }
+            }
         }
     }
 }

@@ -16,7 +16,7 @@ namespace ULTRAKILLtweaker.Tweaks.UIElements
 
         public Page(string name, Transform parent)
         {
-            Self = GameObject.Instantiate(UIPreloader.Settings["Page"], parent);
+            Self = GameObject.Instantiate(UIElement.Settings["Page"], parent);
             Self.ChildByName("Title").GetComponent<Text>().text = name;
             Holder = Self.GetComponentInChildren<LayoutGroup>();
             PageName = name;

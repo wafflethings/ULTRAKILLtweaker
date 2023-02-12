@@ -14,63 +14,6 @@ using UnityEngine.UI;
 
 namespace ULTRAKILLtweaker
 {
-    public class SliderSetting : Setting
-    {
-        public Slider slider { get; private set; }
-        public Text text { get; private set; }
-        public float min { get; private set; }
-        public float max { get; private set; }
-        public bool forceWhole { get; private set; }
-        public string displayAs { get; private set; }
-
-        public SliderSetting(string SettingID, GameObject sliderobj, float mini, float maxi, float settingDefaultValue, bool whole = false, string display = "{0}", bool NotChildOfArtifact = false)
-        {
-            ID = SettingID;
-            if (NotChildOfArtifact)
-            {
-                slider = sliderobj.ChildByName("Slider").GetComponent<Slider>();
-                text = sliderobj.ChildByName("Slider").ChildByName("Amount").GetComponent<Text>();
-            } else
-            {
-                slider = sliderobj.GetComponent<Slider>();
-                text = sliderobj.ChildByName("Amount").GetComponent<Text>();
-            }
-            min = mini;
-            max = maxi;
-
-            defaultValue = settingDefaultValue;
-
-            slider.wholeNumbers = whole;
-            forceWhole = whole;
-
-            displayAs = display;
-
-            slider.minValue = min;
-            slider.maxValue = max;
-        }
-
-        public string GetDisplay()
-        {
-            return string.Format(displayAs, Math.Round(slider.value, 1));
-        }
-
-        public override void SetDisplay()
-        {
-            if(MainClass.Instance.SettingsInit)
-                text.text = GetDisplay();
-        }
-
-        public override void UpdateValue()
-        {
-            value = Math.Round(slider.value, 1);
-        }
-
-        public override void SetValue()
-        {
-            slider.value = (float)Math.Round((double)Convert.ToSingle(value), 1);
-        }
-    }
-
     public class SliderSubsetting : Setting
     {
         public Slider slider { get; private set; }
@@ -80,7 +23,7 @@ namespace ULTRAKILLtweaker
         public bool forceWhole { get; private set; }
         public string displayAs { get; private set; }
 
-        public SliderSubsetting(string SettingID, GameObject sliderobj, float mini, float maxi, float settingDefaultValue, bool whole = false, string display = "{0}", bool NotChildOfArtifact = false)
+        public SliderSubsetting(string SettingID, GameObject sliderobj, float mini, float maxi, float settingDefaultValue, bool whole = false, string display = "{0}")
         {
             ID = SettingID;
 
@@ -107,11 +50,14 @@ namespace ULTRAKILLtweaker
                 if (Input.GetKey(KeyCode.LeftControl))
                     precision = 1;
 
-                value = (float)Math.Round((double)Convert.ToSingle(val), precision);
+                if (val <= max)
+                {
+                    value = (float)Math.Round((double)Convert.ToSingle(val), precision);
 
-                input.text = string.Format(displayAs, value);
+                    input.text = string.Format(displayAs, value);
 
-                input.textComponent.color = Color.white;
+                    input.textComponent.color = Color.white;
+                }
             });
 
             input.onEndEdit.AddListener((val) =>
@@ -155,15 +101,10 @@ namespace ULTRAKILLtweaker
     {
         public Toggle toggle { get; private set; }
 
-        public ToggleSetting(string SettingID, GameObject toggleobj, bool settingDefaultValue, bool NotChildOfArtifact = false)
+        public ToggleSetting(string SettingID, GameObject toggleobj, bool settingDefaultValue)
         {
             ID = SettingID;
-
-            if (NotChildOfArtifact)
-                toggle = toggleobj.ChildByName("Toggle").GetComponent<Toggle>();
-            else 
-                toggle = toggleobj.GetComponent<Toggle>();
-
+            toggle = toggleobj.ChildByName("Toggle").GetComponent<Toggle>();
             defaultValue = settingDefaultValue;
 
             toggle.onValueChanged.AddListener((val) =>
