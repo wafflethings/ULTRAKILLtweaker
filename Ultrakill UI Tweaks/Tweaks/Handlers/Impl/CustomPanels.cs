@@ -23,13 +23,26 @@ namespace ULTRAKILLtweaker.Tweaks.Handlers.Impl
         // All hits that have occured in the last Second
         public static List<Hit> HitsSecond = new List<Hit>();
 
-        public NewMovement nm;
+        public class Hit
+        {
+            public DateTime time;
+            public EnemyIdentifier eid;
+            public float dmg;
+
+            public Hit(EnemyIdentifier eid, float dmg)
+            {
+                this.eid = eid;
+                this.dmg = dmg;
+                time = DateTime.Now;
+            }
+        }
 
         private bool PanelsExist = false;
 
         public override void OnTweakEnabled()
         {
             base.OnTweakEnabled();
+            harmony.PatchAll(typeof(PanelPatches));
 
             CreatePanels();
 
@@ -81,6 +94,7 @@ namespace ULTRAKILLtweaker.Tweaks.Handlers.Impl
         public override void OnTweakDisabled()
         {
             base.OnTweakDisabled();
+            harmony.UnpatchSelf();
 
             PanelsExist = false;
             Destroy(PlayerInfo);
@@ -91,6 +105,8 @@ namespace ULTRAKILLtweaker.Tweaks.Handlers.Impl
 
         public void Update()
         {
+            NewMovement nm = NewMovement.Instance;
+
             if (PanelsExist)
             {
                 bool Info = Utils.GetSetting<bool>("hppanel");

@@ -293,7 +293,7 @@ namespace ULTRAKILLtweaker
                 var SlowdownLength = new SliderSubsettingElement(HitstopMult.Subsettings, new Tweaks.Metadata("SLOWDOWN LENGTH", "The SlowDown property."));
                 var DisableParry = new ToggleSubsettingElement(HitstopMult.Subsettings, new Tweaks.Metadata("DISABLE PARRY FLASH", "Disable the parry flash."));
 
-            var ShowPBs = new TweakSettingElement(Pages[0].Holder, new Tweaks.Metadata("SHOW PBs FOR TIME, KILLS, AND STYLE", "Save and display your PBs on TAB."));
+            var ShowPBs = new TweakSettingElement(Pages[0].Holder, new Tweaks.Metadata("SHOW PBs FOR TIME, KILLS, AND STYLE", "Save and display your PBs on TAB. Hovering on the rank in level select will also show them."));
             var DamageNoti = new TweakSettingElement(Pages[0].Holder, new Tweaks.Metadata("DAMAGE NOTIFICATION (EXPERIMENTAL)", "Show your hits, with info, as subtitles."));
             #endregion
 
@@ -605,25 +605,10 @@ namespace ULTRAKILLtweaker
                     }
                 }
 
-                if (ModAmount != 0)
-                    text.text = "<size=14>+ " + mods.Substring(0, mods.Length - 2) + "</size>\n<size=12>\n</size>" + text.text;
+                HudMessageReceiver.Instance.SendHudMessage(mods);
             }
         }
     }
     #endregion
-
-    public class Hit
-    {
-        public DateTime time;
-        public EnemyIdentifier eid;
-        public float dmg;
-
-        public Hit(EnemyIdentifier eid, float dmg)
-        {
-            this.eid = eid;
-            this.dmg = dmg;
-            time = DateTime.Now;
-        }
-    }
 }
 

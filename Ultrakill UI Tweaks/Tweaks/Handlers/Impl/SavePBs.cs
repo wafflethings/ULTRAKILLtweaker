@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ULTRAKILLtweaker.Components;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -15,7 +16,7 @@ namespace ULTRAKILLtweaker.Tweaks.Handlers.Impl
     {
         private Harmony harmony = new Harmony("waffle.ultrakill.UKtweaker.savepbs");
         private GameObject NewStat;
-        protected LevelStats ls;
+        protected static LevelStats ls;
 
         public void CreateStat()
         {
@@ -72,7 +73,7 @@ namespace ULTRAKILLtweaker.Tweaks.Handlers.Impl
             [HarmonyPostfix]
             static void SetLS(LevelStats __instance)
             {
-                ((SavePBs)MainClass.Instance.TypeToHandler[typeof(SavePBs)]).ls = __instance;
+                ls = __instance;
             }
 
             [HarmonyPatch(typeof(FinalRank), nameof(FinalRank.SetTime))]
@@ -99,6 +100,60 @@ namespace ULTRAKILLtweaker.Tweaks.Handlers.Impl
                 }
 
                 Times.Save();
+            }
+
+            [HarmonyPatch(typeof(LevelSelectPanel), nameof(LevelSelectPanel.OnEnable))]
+            [HarmonyPrefix]
+            static void AddHover(LevelSelectPanel __instance)
+            {
+                if(__instance.gameObject.ChildByName("Stats").ChildByName("Rank").GetComponent<HoverRank>() == null)
+                {
+                    __instance.gameObject.ChildByName("Stats").ChildByName("Rank").AddComponent<HoverRank>();
+                }
+            }
+
+            class HoverRank : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+            {
+                GameObject SecretPanel;
+                string DefaultValue;
+                string SceneName;
+
+                public void Start()
+                {
+                    SecretPanel = transform.parent.gameObject.ChildByName("Challenge").transform.GetChild(1).gameObject;
+                    SceneName = "Level " + GetComponentInParent<LevelSelectPanel>().gameObject.ChildByName("Image").GetComponent<Image>().mainTexture.name.Substring(0, 3);
+                    GetComponent<Image>().raycastTarget = true;
+                }
+
+                public void OnPointerEnter(PointerEventData eventData)
+                {
+                    Debug.Log($"{SceneName} has SP null {SecretPanel == null}");
+
+                    if (Times.SceneToKills.ContainsKey(SceneName))
+                    {
+                        SecretPanel.SetActive(true);
+                        DefaultValue = SecretPanel.ChildByName("Text").GetComponent<Text>().text;
+
+                        string joe = TimeSpan.FromSeconds(Times.SceneToTime[SceneName]).ToString();
+                        if (joe.StartsWith("00:"))
+                            joe = joe.Substring(3, joe.Length - 7);
+                        else
+                            joe = joe.Substring(0, joe.Length - 4);
+
+
+                        SecretPanel.ChildByName("Text").GetComponent<Text>().text = 
+                            $"<b>TIME:</b> {joe}, <b>KILLS:</b> {Times.SceneToKills[SceneName]}, <b>STYLE:</b> {Times.SceneToStyle[SceneName]} ";
+                    }
+                }
+
+                public void OnPointerExit(PointerEventData eventData)
+                {
+                    if (Times.SceneToKills.ContainsKey(SceneName))
+                    {
+                        SecretPanel.SetActive(false);
+                        SecretPanel.ChildByName("Text").GetComponent<Text>().text = DefaultValue;
+                    }
+                }
             }
         }
     }

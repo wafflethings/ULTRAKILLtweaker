@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -24,6 +25,8 @@ namespace ULTRAKILLtweaker.Tweaks.Handlers.Impl
         private AudioClip LastClip;
         public AudioSource Source;
 
+        public Coroutine MCL;
+
         public override void OnTweakEnabled()
         {
             base.OnTweakEnabled();
@@ -37,27 +40,19 @@ namespace ULTRAKILLtweaker.Tweaks.Handlers.Impl
             harmony.UnpatchSelf();
         }
 
-        public void SetClips()
-        {
-            if (SceneManager.GetActiveScene().name == "Endless")
-            {
-                var mm = MusicManager.Instance;
-                RandomClip();
-                //mm.battleTheme.clip = LastClip;
-                //mm.bossTheme.clip = LastClip;
-               // mm.cleanTheme.clip = LastClip;
-                //mm.ForceStartMusic();
-
-                Invoke("SetClips", LastClip.length);
-            }
-        }
-
         public override void OnSceneLoad(Scene scene, LoadSceneMode mode)
         {
+            if(MCL != null)
+            {
+                StopCoroutine(MCL);
+            }
+
             if (SceneManager.GetActiveScene().name == "Endless")
             {
                 Music = GetClipsFromFolder();
                 MusicPool = Music;
+                Source = new GameObject("ULTRAKILLtweaker: AUDIO MANAGER").AddComponent<AudioSource>();
+                StartCoroutine(MusLoopWhenWaveCount());
             }
         }
 
@@ -109,16 +104,48 @@ namespace ULTRAKILLtweaker.Tweaks.Handlers.Impl
             return LastClip;
         }
 
-        public static class CGMusicPatches
+        public IEnumerator MusLoopWhenWaveCount()
+        {
+            while (GameObject.Find("Wave Number") == null || GameObject.Find("Wave Number").activeSelf == false)
+            {
+                yield return null;
+            }
+            MCL = StartCoroutine(MusicCheckLoop());
+            Debug.Log("Starting Music Check Loop.");
+        }
+
+        private IEnumerator MusicCheckLoop()
+        {
+            while (true)
+            {
+                if (!Source.isPlaying)
+                {
+                    if (GameObject.Find("Wave Number") != null)
+                    {
+                        Source.PlayOneShot(RandomClip());
+                    }
+                    else
+                    {
+                        yield break;
+                    }
+                    yield return null;
+                }
+                else
+                {
+                    yield return null;
+                }
+            }
+        }
+
+        public class CGMusicPatches
         {
             [HarmonyPatch(typeof(ActivateOnSoundEnd), nameof(ActivateOnSoundEnd.Start))]
             [HarmonyPrefix]
-            public static void SetMusic(ActivateOnSoundEnd __instance)
+            public static void DestroyOGSong(ActivateOnSoundEnd __instance)
             {
-                if (SceneManager.GetActiveScene().name == "Endless")
+                if(SceneManager.GetActiveScene().name == "Endless" && __instance.name == "Intro")
                 {
                     Destroy(__instance.gameObject);
-                    Instance.SetClips();
                 }
             }
         }
