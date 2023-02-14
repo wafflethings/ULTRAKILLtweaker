@@ -31,7 +31,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Components\ArtifactHover.cs" />
     <Compile Include="Components\BlessWhenFar.cs" />
     <Compile Include="Components\DescriptionBubble.cs" />
     <Compile Include="Components\EnableDisableEvent.cs" />

@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ULTRAKILLtweaker.Components;
 using ULTRAKILLtweaker.Tweaks.Handlers;
+using ULTRAKILLtweaker.Tweaks.UIElements;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -23,10 +24,11 @@ namespace ULTRAKILLtweaker
         public bool forceWhole { get; private set; }
         public string displayAs { get; private set; }
 
-        public SliderSubsetting(string SettingID, GameObject sliderobj, float mini, float maxi, float settingDefaultValue, bool whole = false, string display = "{0}")
+        public SliderSubsetting(string SettingID, GameObject sliderobj, float mini, float maxi, float settingDefaultValue, bool whole = false, string display = "{0}") : base()
         {
             ID = SettingID;
 
+            self = sliderobj;
             slider = sliderobj.ChildByName("Slider").GetComponent<Slider>();
             input = sliderobj.ChildByName("InputField").GetComponent<InputField>();
 
@@ -100,11 +102,14 @@ namespace ULTRAKILLtweaker
     public class ToggleSetting : Setting
     {
         public Toggle toggle { get; private set; }
+        public UIElement uie;
 
-        public ToggleSetting(string SettingID, GameObject toggleobj, bool settingDefaultValue)
+        public ToggleSetting(string SettingID, UIElement toggleobj, bool settingDefaultValue) : base()
         {
             ID = SettingID;
-            toggle = toggleobj.ChildByName("Toggle").GetComponent<Toggle>();
+            self = toggleobj.Self;
+            uie = toggleobj;
+            toggle = toggleobj.Self.ChildByName("Toggle").GetComponent<Toggle>();
             defaultValue = settingDefaultValue;
 
             toggle.onValueChanged.AddListener((val) =>
@@ -119,87 +124,17 @@ namespace ULTRAKILLtweaker
         }
     }
 
-    public class ArtifactSetting : Setting
-    {
-        public Toggle toggle { get; private set; }
-        public string Description;
-        public string Name;
-        public bool DisableCG;
-        public List<string> Sets;
-
-        public ArtifactSetting(string SettingID, GameObject toggleobj, bool disablecg, bool settingDefaultValue, string name = "Placeholder Plugin", string desc = "Placeholder Description", List<string> SetIDs = null)
-        {
-            ID = SettingID;
-            toggle = toggleobj.GetComponent<Toggle>();
-            defaultValue = settingDefaultValue;
-            Description = desc;
-            Name = name;
-            DisableCG = disablecg;
-            Sets = SetIDs;
-
-            if (Sets == null)
-                Sets = new List<string>();
-
-            ArtifactHover ah = toggle.gameObject.AddComponent<ArtifactHover>();
-            ah.me = this;
-            
-            if (toggleobj.ChildByName("Extra Settings") != null)
-            {
-                toggleobj.ChildByName("Extra Settings").AddComponent<HudOpenEffect>();
-                toggleobj.ChildByName("Extra Settings").ChildByName("STUFF").ChildByName("Close").GetComponent<Button>().onClick.AddListener(() =>
-                {
-                    foreach (Setting set in SettingRegistry.settings)
-                    {
-                        if (set.GetType() == typeof(ArtifactSetting))
-                        {
-                            ((ArtifactSetting)set).toggle.gameObject.SetActive(true);
-                        }
-                    }
-
-                    toggleobj.ChildByName("Extra Settings").SetActive(false);
-                    toggle.enabled = true;
-                });
-
-                toggleobj.ChildByName("Extra Settings").AddComponent<EnsureCentered>();
-                toggleobj.ChildByName("Extra Settings").SetActive(false);
-            }
-        }
-
-        public override void UpdateValue()
-        {
-            value = toggle.isOn;
-        }
-
-        public string GetDetails()
-        {
-            string SetDetails = "(";
-
-            foreach(string str in Sets)
-            {
-                SetDetails += Utils.GetSetting<float>(str);
-                if (Sets.Last() != str)
-                    SetDetails += ", ";
-            }
-
-            SetDetails += ")";
-
-            if (SetDetails == "()")
-                SetDetails = "";
-
-            return $"{Name} {SetDetails}";
-        }
-
-        public override void SetValue()
-        {
-            toggle.isOn = Convert.ToBoolean(value);
-        }
-    }
-
     public class Setting
     {
         public string ID;
         public object value;
         public object defaultValue;
+        public GameObject self;
+
+        public Setting()
+        {
+            SettingRegistry.settings.Add(this);
+        }
 
         public virtual void UpdateValue()
         {
@@ -259,9 +194,9 @@ namespace ULTRAKILLtweaker
 
                 text += $"{setting.ID}{split}{setting.value}\n";
 
-                if(MainClass.Instance.IDToType.ContainsKey(setting.ID))
+                if(MainClass.IDToType.ContainsKey(setting.ID))
                 {
-                    TweakHandler handler = MainClass.Instance.TypeToHandler[MainClass.Instance.IDToType[setting.ID]];
+                    TweakHandler handler = MainClass.TypeToHandler[MainClass.IDToType[setting.ID]];
                     bool Value = Convert.ToBoolean(((ToggleSetting)setting).value);
 
                     if (Value && !handler.WasEnabled)

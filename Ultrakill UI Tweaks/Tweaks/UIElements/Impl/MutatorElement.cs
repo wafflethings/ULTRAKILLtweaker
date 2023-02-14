@@ -9,7 +9,7 @@ namespace ULTRAKILLtweaker.Tweaks.UIElements.Impl
 {
     public class MutatorElement : TweakSettingElement
     {
-        public MutatorElement(LayoutGroup lg, Metadata meta) : base(lg, meta)
+        public MutatorElement(LayoutGroup lg, Metadata meta, Setting[] children = null) : base(lg, meta, children)
         {
             if (meta.Image != null) 
             {

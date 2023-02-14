@@ -27,7 +27,7 @@ namespace ULTRAKILLtweaker
         #region Variables
         public static MainClass Instance;
 
-        public Dictionary<string, Type> IDToType = new Dictionary<string, Type>()
+        public static Dictionary<string, Type> IDToType = new Dictionary<string, Type>()
         {
             { "hitstop_enabled", typeof(HitstopMultiplier) },
             { "savepbs", typeof(SavePBs) },
@@ -62,7 +62,7 @@ namespace ULTRAKILLtweaker
             { "ARTIFACT_whiphard", typeof(WhipFix) }
         };
 
-        public Dictionary<Type, TweakHandler> TypeToHandler = new Dictionary<Type, TweakHandler>()
+        public static Dictionary<Type, TweakHandler> TypeToHandler = new Dictionary<Type, TweakHandler>()
         {
         };
 
@@ -194,20 +194,7 @@ namespace ULTRAKILLtweaker
             {
                 foreach (Setting set in SettingRegistry.settings)
                 {
-                    if (set.GetType() == typeof(ArtifactSetting))
-                    {
-                        ArtifactSetting arti = (ArtifactSetting)set;
-                        if (arti.DisableCG)
-                        {
-                            Debug.Log($"Remove UKTW: Modifier {set.ID} enabled");
-                            UKAPI.RemoveDisableCyberGrindReason($"UKTW: Modifier {set.ID} enabled");
-                            if (!Convert.ToBoolean(arti.value))
-                            {
-                                UKAPI.DisableCyberGrindSubmission($"UKTW: Modifier {set.ID} enabled");
-                                Debug.Log($"Add UKTW: Modifier {set.ID} enabled");
-                            }
-                        }
-                    }
+                    //TODO disable for bad
                 }
             }
         }
@@ -286,191 +273,123 @@ namespace ULTRAKILLtweaker
             SettingRegistry.settings.Clear();
             SettingRegistry.idToSetting.Clear();
 
-            #region Page 1 - MISC
-            var HitstopMult = new TweakSettingElement(Pages[0].Holder, new Tweaks.Metadata("HITSTOP MULTIPLIER", "Increase or decrease the length of hitstop."));
-                var HitstopLength = new SliderSubsettingElement(HitstopMult.Subsettings, new Tweaks.Metadata("HITSTOP LENGTH", "The HitStop property."));
-                var TruestopLength = new SliderSubsettingElement(HitstopMult.Subsettings, new Tweaks.Metadata("TRUESTOP LENGTH", "The TrueStop property."));
-                var SlowdownLength = new SliderSubsettingElement(HitstopMult.Subsettings, new Tweaks.Metadata("SLOWDOWN LENGTH", "The SlowDown property."));
-                var DisableParry = new ToggleSubsettingElement(HitstopMult.Subsettings, new Tweaks.Metadata("DISABLE PARRY FLASH", "Disable the parry flash."));
-
-            var ShowPBs = new TweakSettingElement(Pages[0].Holder, new Tweaks.Metadata("SHOW PBs FOR TIME, KILLS, AND STYLE", "Save and display your PBs on TAB. Hovering on the rank in level select will also show them."));
-            var DamageNoti = new TweakSettingElement(Pages[0].Holder, new Tweaks.Metadata("DAMAGE NOTIFICATION (EXPERIMENTAL)", "Show your hits, with info, as subtitles."));
-            #endregion
-
-            #region Page 2 - MISC HUD
-            var UIScale = new TweakSettingElement(Pages[1].Holder, new Tweaks.Metadata("HUD SCALE", "Change the size of various HUD elements.", true));
-                var CanvasScale = new SliderSubsettingElement(UIScale.Subsettings, new Tweaks.Metadata("CANVAS SCALE (EXPERIMENTAL)", "Scale of the UI canvas."));
-                var InfoScale = new SliderSubsettingElement(UIScale.Subsettings, new Tweaks.Metadata("INFO PANEL SCALE", "Scale of the HP + more panel."));
-                var StyleScale = new SliderSubsettingElement(UIScale.Subsettings, new Tweaks.Metadata("STYLE PANEL SCALE", "Scale of the style panel."));
-                var BossbarScale = new SliderSubsettingElement(UIScale.Subsettings, new Tweaks.Metadata("BOSSBAR SCALE", "Scale of the bossbar."));
-                var ResultsScale = new SliderSubsettingElement(UIScale.Subsettings, new Tweaks.Metadata("RESULTS PANEL SCALE", "Scale of the results panel."));
-
-            var FPSCounter = new TweakSettingElement(Pages[1].Holder, new Tweaks.Metadata("DISPLAY FPS COUNTER", "Save and display your PBs on TAB."));
-            var GunPanel = new TweakSettingElement(Pages[1].Holder, new Tweaks.Metadata("FORCE GUN PANEL (FOR ALT RAILCANNON PIP)", "Forces the gun panel. Disable WEAPON ICON in HUD, and you will be able to use the alternate railcannon charge indicator.", true));
-            #endregion
-
-            #region Page 3 - PANELS
-            var GeneralPanels = new TweakSettingElement(Pages[2].Holder, new Tweaks.Metadata("CUSTOM PANELS", "Various small UI elements."));
-                var InfoPanel = new ToggleSubsettingElement(GeneralPanels.Subsettings, new Tweaks.Metadata("INFO PANEL", "Shows HP, stamina, rail charge."));
-                var WeaponPanel = new ToggleSubsettingElement(GeneralPanels.Subsettings, new Tweaks.Metadata("WEAPON PANEL", "Save and display your PBs on TAB."));
-                var DamagePanel = new ToggleSubsettingElement(GeneralPanels.Subsettings, new Tweaks.Metadata("DPS PANEL", "Save and display your PBs on TAB."));
-                var SpeedPanel = new ToggleSubsettingElement(GeneralPanels.Subsettings, new Tweaks.Metadata("SPEEDOMETER", "Save and display your PBs on TAB."));
-            #endregion
-
-            #region Page 4 - VIEWMODEL
-            var ViewmodelTrans = new TweakSettingElement(Pages[3].Holder, new Tweaks.Metadata("VIEWMODEL TWEAKS", "Move, resize, and tweak the viewmodel.", true));
-                var ViewmodelScale = new SliderSubsettingElement(ViewmodelTrans.Subsettings, new Tweaks.Metadata("VIEWMODEL SIZE", "How much the VM scale is mult'd by."));
-            // var ViewmodelOffset = new SliderSubsettingElement(ViewmodelTrans.Subsettings, new Tweaks.Metadata("VIEWMODEL OFFSET", "How much the VM position is offset by."));
-                var ViewmodelFov = new SliderSubsettingElement(ViewmodelTrans.Subsettings, new Tweaks.Metadata("VIEWMODEL FOV", "The VM's field of view."));
-                var VMAimRot = new ToggleSubsettingElement(ViewmodelTrans.Subsettings, new Tweaks.Metadata("DISABLE AIM-ASSIST ROTATION", "The viewmodel doesn't rotate with aim-assist."));
-                var VMBobbing = new ToggleSubsettingElement(ViewmodelTrans.Subsettings, new Tweaks.Metadata("NO VM BOBBING", "The viewmodel doesn't bob."));
-            #endregion
-
-            #region Page 5 - CYBERGRIND
-            var CustomCGMus = new TweakSettingElement(Pages[4].Holder, new Tweaks.Metadata("CUSTOM CYBERGRIND MUSIC (OGG/WAV/MP3)", "Customised Cybergrind music, chosen randomly.", true));
-                var Comment = new CommentSubsettingElement(CustomCGMus.Subsettings, new Tweaks.Metadata("MUSIC PATH:", Path.Combine(Utils.GameDirectory(), @"BepInEx\UMM Mods\plugins\ULTRAKILLtweaker\Cybergrind Music")));
-            var CGUtils = new TweakSettingElement(Pages[4].Holder, new Tweaks.Metadata("CYBERGRIND UTILITIES", "CG stats in the top left. Based on a mod by Epsypolym.", true));
-            #endregion
-
-            #region Page 6 - FUN
-            var FLORPPP = new TweakSettingElement(Pages[5].Holder, new Tweaks.Metadata("SKULL FLORPIFICATION", "Skulls are replaced by Florp.", true));
-            var Explorsion = new TweakSettingElement(Pages[5].Holder, new Tweaks.Metadata("EXPLODE ON DEATH", "When you die, everyone around you does too."));
-            #endregion
-
-            #region Page 7 - MUTATORS
-
-            var NoWeapons = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("EMPTY HANDED", "No weapons, punch your enemies to death. Good luck beating P-1, I've done it."));
-          
-            var NoArms = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("DISARMED", "V1 has no arms. You can't punch, whiplash, or parry."));
-           
-            var NoStamina = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("LETHARGY", "V1 is tired, and has no stamina. No dash-jumps or power-slams."));
-           
-            var Tankify = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("TANKIFY", "Every enemy gets more health."));
-                var TankifyMult = new SliderSubsettingElement(Tankify.Subsettings, new Tweaks.Metadata("MULTIPLIER", "Enemy health multiplier."));
-          
-            var Sandify = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("SANDIFY", "Every enemy gets covered in sand. Parrying is the only way to heal."));
-          
-            var Distance = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("CLOSE QUARTERS", "Enemies become blessed when too far."));
-                var DistanceDist = new SliderSubsettingElement(Distance.Subsettings, new Tweaks.Metadata("DISTANCE", "Distance for activation."));
-           
-            var Mitosis = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("MITOSIS", "Enemies are duplicated. You can go above 10x, if you enter it several times."));
-                var MitosisAmount = new SliderSubsettingElement(Mitosis.Subsettings, new Tweaks.Metadata("MULTIPLIER", "How many enemies per enemy."));
-           
-            var Fragility = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("FRAGILITY", "Your health cap is lower."));
-                var FragilityMult = new SliderSubsettingElement(Fragility.Subsettings, new Tweaks.Metadata("CAP", "The maximum amount of HP."));
-           
-            var FuelLeak = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("FUEL LEAK", "Blood is actually fuel, and gets used over time. Heal before all of your HP runs out."));
-                var FLMulti = new SliderSubsettingElement(FuelLeak.Subsettings, new Tweaks.Metadata("MULTIPLIER", "HP lost per second."));
-           
-            var FloorIsLava = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("FLOOR IS LAVA", "You are damaged when grounded. Based on a mod by <b>nptnk#0001</b>."));
-                var FILDmg = new SliderSubsettingElement(FloorIsLava.Subsettings, new Tweaks.Metadata("DAMAGE", "Damage lost per second."));
-                var FILTime = new SliderSubsettingElement(FloorIsLava.Subsettings, new Tweaks.Metadata("TIME", "Time before you start getting hurt."));
-          
-            var Freshness = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("FRESHNESS", "You get hurt whenever your freshness rank is below a certain amount."));
-                var FrFr = new SliderSubsettingElement(Freshness.Subsettings, new Tweaks.Metadata("FRESH", "HP lost per second on the 'Fresh' rank."));
-                var FrUs = new SliderSubsettingElement(Freshness.Subsettings, new Tweaks.Metadata("USED", "HP lost per second on the 'Used' rank."));
-                var FrSt = new SliderSubsettingElement(Freshness.Subsettings, new Tweaks.Metadata("STALE", "HP lost per second on the 'Stale' rank."));
-                var FrDu = new SliderSubsettingElement(Freshness.Subsettings, new Tweaks.Metadata("DULL", "HP lost per second on the 'Dull' rank."));
-          
-            var Speed = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("SPEED", "Change the speed of both yourself, and your enemies."));
-                var SpeedPlayer = new SliderSubsettingElement(Speed.Subsettings, new Tweaks.Metadata("PLAYER", "Player speed multiplier."));
-                var SpeedEnemy = new SliderSubsettingElement(Speed.Subsettings, new Tweaks.Metadata("ENEMY", "Enemy speed multiplier."));
-          
-            var Ice = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("ULTRAKILL ON ICE", "You become slippery."));
-                var IceFriction = new SliderSubsettingElement(Ice.Subsettings, new Tweaks.Metadata("FRICTION", "Friction while walking."));
-          
-            var SuperHot = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("ULTRAHOT", "Time only moves when you move."));
-          
-            var Glass = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("GLASS", "Deal two times the damage - at the cost of 70% of your health."));
-          
-            var RandomLoadout = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("DICE ROLL", "Your loadout is randomised at a chosen interval."));
-                var RLTime = new SliderSubsettingElement(RandomLoadout.Subsettings, new Tweaks.Metadata("INTERVAL", "Time between resets."));
-          
-            var Water = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("SUBMERGED", "Every level is flooded with water."));
-           
-            var WhipFix = new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("WHIP FIX", "Change the hard damage gained from whiplashing. Made pre-Patch11b, obsolete."));
-                var WFMult = new SliderSubsettingElement(WhipFix.Subsettings, new Tweaks.Metadata("MULTIPLIER", "Hard damage multiplier."));
-
-            #endregion
-
             List<Setting> Settings = new List<Setting>()
             {
-                new ToggleSetting("hitstop_enabled", HitstopMult.Self, false),
-                    new SliderSubsetting("hitstopmult", HitstopLength.Self, 0, 2, 1, false, "{0}x"),
-                    new SliderSubsetting("truestopmult", TruestopLength.Self, 0, 2, 1, false, "{0}x"),
-                    new SliderSubsetting("slowdownmult", SlowdownLength.Self, 0, 2, 1, false, "{0}x"),
-                    new ToggleSetting("parryflashoff", DisableParry.Self, false),
+                new ToggleSetting("hitstop_enabled", new TweakSettingElement(Pages[0].Holder, new Metadata("HITSTOP MULTIPLIER", "Increase or decrease the length of hitstop."), new Setting[]
+                {
+                    new SliderSubsetting("hitstopmult", new SliderSubsettingElement(new Metadata("HITSTOP LENGTH", "The HitStop property.")).Self, 0, 2, 1, false, "{0}x"),
+                    new SliderSubsetting("truestopmult", new SliderSubsettingElement(new Metadata("TRUESTOP LENGTH", "The TrueStop property.")).Self, 0, 2, 1, false, "{0}x"),
+                    new SliderSubsetting("slowdownmult", new SliderSubsettingElement(new Metadata("SLOWDOWN LENGTH", "The SlowDown property.")).Self, 0, 2, 1, false, "{0}x"),
+                    new ToggleSetting("parryflashoff", new ToggleSubsettingElement(new Metadata("DISABLE PARRY FLASH", "Disable the parry flash.")), false),
+                }), false),
 
-                new ToggleSetting("savepbs", ShowPBs.Self, false),
-                new ToggleSetting("dmgsub", DamageNoti.Self, false),
+                new ToggleSetting("savepbs", new TweakSettingElement(Pages[0].Holder, new Metadata("SHOW PBs FOR TIME, KILLS, AND STYLE", "Save and display your PBs on TAB. Hovering on the rank in level select will also show them.")), false),
+                new ToggleSetting("dmgsub", new TweakSettingElement(Pages[0].Holder, new Metadata("DAMAGE NOTIFICATION (EXPERIMENTAL)", "Show your hits, with info, as subtitles.")), false),
 
-                new ToggleSetting("uiscale_enabled", UIScale.Self, false),
-                    new SliderSubsetting("uiscalecanv", CanvasScale.Self, 0, 100, 100, true, "{0}%"),
-                    new SliderSubsetting("uiscale", InfoScale.Self, 0, 110, 100, true, "{0}%"),
-                    new SliderSubsetting("uiscalestyle", StyleScale.Self, 0, 110, 100, true, "{0}%"),
-                    new SliderSubsetting("uiscaleresults", ResultsScale.Self, 0, 100, 100, true, "{0}%"),
-                    new SliderSubsetting("uiscaleboss", BossbarScale.Self, 0, 100, 100, true, "{0}%"),
+                new ToggleSetting("uiscale_enabled", new TweakSettingElement(Pages[1].Holder, new Metadata("HUD SCALE", "Change the size of various HUD elements.", true), new Setting[]
+                {
+                    new SliderSubsetting("uiscalecanv", new SliderSubsettingElement(new Metadata("CANVAS SCALE (EXPERIMENTAL)", "Scale of the UI canvas.")).Self, 0, 100, 100, true, "{0}%"),
+                    new SliderSubsetting("uiscale", new SliderSubsettingElement(new Metadata("INFO PANEL SCALE", "Scale of the HP + more panel.")).Self, 0, 110, 100, true, "{0}%"),
+                    new SliderSubsetting("uiscalestyle", new SliderSubsettingElement(new Metadata("STYLE PANEL SCALE", "Scale of the style panel.")).Self, 0, 110, 100, true, "{0}%"),
+                    new SliderSubsetting("uiscaleresults", new SliderSubsettingElement(new Metadata("BOSSBAR SCALE", "Scale of the bossbar.")).Self, 0, 100, 100, true, "{0}%"),
+                    new SliderSubsetting("uiscaleboss", new SliderSubsettingElement(new Metadata("RESULTS PANEL SCALE", "Scale of the results panel.")).Self, 0, 100, 100, true, "{0}%"),
+                }), false),
 
-                new ToggleSetting("forcegun", GunPanel.Self, false),
-                new ToggleSetting("fpscounter", FPSCounter.Self, false),
+                new ToggleSetting("forcegun", new TweakSettingElement(Pages[1].Holder, new Metadata("FORCE GUN PANEL (FOR ALT RAILCANNON PIP)", "Forces the gun panel. Disable WEAPON ICON in HUD, and you will be able to use the alternate railcannon charge indicator.", true)), false),
+                new ToggleSetting("fpscounter", new TweakSettingElement(Pages[1].Holder, new Metadata("DISPLAY FPS COUNTER", "Save and display your PBs on TAB.")), false),
 
-                new ToggleSetting("panels", GeneralPanels.Self, false),
-                    new ToggleSetting("hppanel", InfoPanel.Self, false),
-                    new ToggleSetting("weapanel", WeaponPanel.Self, false),
-                    new ToggleSetting("dps", DamagePanel.Self, false),
-                    new ToggleSetting("speedometer", SpeedPanel.Self, false),
+                new ToggleSetting("panels", new TweakSettingElement(Pages[2].Holder, new Metadata("CUSTOM PANELS", "Various small UI elements."), new Setting[]
+                {
+                    new ToggleSetting("hppanel", new ToggleSubsettingElement(new Metadata("INFO PANEL", "Shows HP, stamina, rail charge.")), false),
+                    new ToggleSetting("weapanel", new ToggleSubsettingElement(new Metadata("WEAPON PANEL", "Save and display your PBs on TAB.")), false),
+                    new ToggleSetting("dps", new ToggleSubsettingElement(new Metadata("DPS PANEL", "Save and display your PBs on TAB.")), false),
+                    new ToggleSetting("speedometer", new ToggleSubsettingElement(new Metadata("SPEEDOMETER", "Save and display your PBs on TAB.")), false),
+                }), false),
 
+                new ToggleSetting("vmtrans", new TweakSettingElement(Pages[3].Holder, new Metadata("VIEWMODEL TWEAKS", "Move, resize, and tweak the viewmodel.", true), new Setting[]
+                {
+                    new SliderSubsetting("vmfov", new SliderSubsettingElement(new Metadata("VIEWMODEL FOV", "The VM's field of view.")).Self, 50, 179, 90, true, "{0}"),
+                    new SliderSubsetting("vmmodel", new SliderSubsettingElement(new Metadata("VIEWMODEL SIZE", "How much the VM scale is mult'd by.")).Self, 0, 1.2f, 1, false, "{0}x"),
+                    new ToggleSetting("nobob", new ToggleSubsettingElement(new Metadata("DISABLE AIM-ASSIST ROTATION", "The viewmodel doesn't rotate with aim-assist.")), false),
+                    new ToggleSetting("notilt", new ToggleSubsettingElement(new Metadata("NO VM BOBBING", "The viewmodel doesn't bob.")), false),
+                }), false),
 
-                new ToggleSetting("vmtrans", ViewmodelTrans.Self, false),
-                    new SliderSubsetting("vmfov", ViewmodelFov.Self, 50, 179, 90, true, "{0}"),
-                    new SliderSubsetting("vmmodel", ViewmodelScale.Self, 0, 1.2f, 1, false, "{0}x"),
-                    new ToggleSetting("nobob", VMBobbing.Self, false),
-                    new ToggleSetting("notilt", VMAimRot.Self, false),
+                new ToggleSetting("cybergrindstats", new TweakSettingElement(Pages[4].Holder, new Metadata("CYBERGRIND UTILITIES", "CG stats in the top left. Based on a mod by Epsypolym.", true)), false),
+                new ToggleSetting("cybergrindmusic", new TweakSettingElement(Pages[4].Holder, new Metadata("CUSTOM CYBERGRIND MUSIC (OGG/WAV/MP3)", Path.Combine(Utils.GameDirectory(), @"BepInEx\UMM Mods\plugins\ULTRAKILLtweaker\Cybergrind Music"), true)), false),
 
-                new ToggleSetting("cybergrindstats", CGUtils.Self, false),
-                new ToggleSetting("cybergrindmusic", CustomCGMus.Self, false),
+                new ToggleSetting("explorsion", new TweakSettingElement(Pages[5].Holder, new Metadata("SKULL FLORPIFICATION", "Skulls are replaced by Florp.", true)), false),
+                new ToggleSetting("legally_distinct_florp", new TweakSettingElement(Pages[5].Holder, new Metadata("EXPLODE ON DEATH", "When you die, everyone around you does too.")), false),
 
-                new ToggleSetting("explorsion", Explorsion.Self, false),
-                new ToggleSetting("legally_distinct_florp", FLORPPP.Self, false),
+                new ToggleSetting("ARTIFACT_noweapons", new MutatorElement(Pages[6].Holder, new Metadata("EMPTY HANDED", "No weapons, punch your enemies to death. Good luck beating P-1, I've done it.")), false),
+                new ToggleSetting("ARTIFACT_noarm", new MutatorElement(Pages[6].Holder, new Metadata("DISARMED", "V1 has no arms. You can't punch, whiplash, or parry.")), false),
+                new ToggleSetting("ARTIFACT_nostamina", new MutatorElement(Pages[6].Holder, new Metadata("LETHARGY", "V1 is tired, and has no stamina. No dash-jumps or power-slams.")), false),
+                new ToggleSetting("ARTIFACT_tank", new MutatorElement(Pages[6].Holder, new Metadata("TANKIFY", "Every enemy gets more health."), new Setting[]
+                {
+                    new SliderSubsetting("artiset_tankify_mult", new SliderSubsettingElement(new Metadata("MULTIPLIER", "Enemy health multiplier.")).Self, 1f, 10f, 2f, false, "{0}x"),
+                }), false),
+                    
+                new ToggleSetting("ARTIFACT_sandify", new MutatorElement(Pages[6].Holder, new Metadata("SANDIFY", "Every enemy gets covered in sand. Parrying is the only way to heal.")), false),
 
-                new ToggleSetting("ARTIFACT_noweapons", NoWeapons.Self, false),
-                new ToggleSetting("ARTIFACT_noarm", NoArms.Self, false),
-                new ToggleSetting("ARTIFACT_nostamina", NoStamina.Self, false),
-                new ToggleSetting("ARTIFACT_tank", Tankify.Self, false),
-                    new SliderSubsetting("artiset_tankify_mult", TankifyMult.Self, 1f, 10f, 2f, false, "{0}x"),
-                new ToggleSetting("ARTIFACT_sandify", Sandify.Self, false),
-                new ToggleSetting("ARTIFACT_distance", Distance.Self, false),
-                    new SliderSubsetting("artiset_distance_distfromplayer", DistanceDist.Self, 5, 50, 15, true, "{0} u"),
-                new ToggleSetting("ARTIFACT_mitosis", Mitosis.Self, false),
-                    new SliderSubsetting("artiset_mitosis_amount", MitosisAmount.Self, 2, 10, 2, true, "{0}x"),
-                new ToggleSetting("ARTIFACT_noHP", Fragility.Self, false),
-                    new SliderSubsetting("artiset_noHP_hpamount", FragilityMult.Self, 1, 100, 1, true, "{0} HP"),
-                new ToggleSetting("ARTIFACT_fuelleak", FuelLeak.Self, false),
-                    new SliderSubsetting("artiset_fuelleak_multi", FLMulti.Self, 1, 20, 5, true, "{0}"),
-                new ToggleSetting("ARTIFACT_floorlava", FloorIsLava.Self, false),
-                    new SliderSubsetting("artiset_floorlava_mult", FILDmg.Self, 1, 100, 100, true, "{0}"),
-                    new SliderSubsetting("artiset_floorlava_time", FILTime.Self, 0f, 5, 0.1f, false, "{0}s"),
-                new ToggleSetting("ARTIFACT_fresh", Freshness.Self, false),
-                    new SliderSubsetting("artiset_fresh_fr", FrFr.Self, 0, 100, 0, true, "{0}"),
-                    new SliderSubsetting("artiset_fresh_us", FrUs.Self, 0, 100, 4, true, "{0}"),
-                    new SliderSubsetting("artiset_fresh_st", FrSt.Self, 0, 100, 8, true, "{0}"),
-                    new SliderSubsetting("artiset_fresh_du", FrDu.Self, 0, 100, 12, true, "{0}"),
-                new ToggleSetting("ARTIFACT_gofast", Speed.Self, false),
-                    new SliderSubsetting("artiset_gofast_player", SpeedPlayer.Self, 0.5f, 7.5f, 2, false, "{0}x"),
-                    new SliderSubsetting("artiset_gofast_enemy", SpeedEnemy.Self, 0.5f, 7.5f, 2, false, "{0}x"),
-                new ToggleSetting("ARTIFACT_ice", Ice.Self, false),
-                    new SliderSubsetting("artiset_ice_frict", IceFriction.Self, 0, 2, 0.5f, false, "{0}x"),
-                new ToggleSetting("ARTIFACT_superhot", SuperHot.Self, false),
-                new ToggleSetting("ARTIFACT_glass", Glass.Self, false),
-                new ToggleSetting("ARTIFACT_diceroll", RandomLoadout.Self, false),
-                    new SliderSubsetting("artiset_diceroll_timereset", RLTime.Self, 5, 300, 30, true, "{0}s"),
-                new ToggleSetting("ARTIFACT_water", Water.Self, false),
-                new ToggleSetting("ARTIFACT_whiphard", WhipFix.Self, false),
-                    new SliderSubsetting("artiset_whip_hard_mult", WFMult.Self, 0f, 2f, 0.5f, false, "{0}x"),
+                new ToggleSetting("ARTIFACT_distance",new MutatorElement(Pages[6].Holder, new Metadata("CLOSE QUARTERS", "Enemies become blessed when too far."), new Setting[]
+                {
+                    new SliderSubsetting("artiset_distance_distfromplayer", new SliderSubsettingElement(new Metadata("DISTANCE", "Distance for activation.")).Self, 5, 50, 15, true, "{0} u")
+                }), false),
+
+                new ToggleSetting("ARTIFACT_mitosis", new MutatorElement(Pages[6].Holder, new Metadata("MITOSIS", "Enemies are duplicated. You can go above 10x, if you enter it several times."), new Setting[]
+                {
+                    new SliderSubsetting("artiset_mitosis_amount", new SliderSubsettingElement(new Metadata("MULTIPLIER", "How many enemies per enemy.")).Self, 2, 10, 2, true, "{0}x"),
+                }), false),
+                    
+                new ToggleSetting("ARTIFACT_noHP", new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("FRAGILITY", "Your health cap is lower."), new Setting[]
+                {
+                    new SliderSubsetting("artiset_noHP_hpamount", new SliderSubsettingElement(new Metadata("CAP", "The maximum amount of HP.")).Self, 1, 100, 1, true, "{0} HP"),
+                }), false),
+
+                    
+                new ToggleSetting("ARTIFACT_fuelleak", new MutatorElement(Pages[6].Holder, new Tweaks.Metadata("FUEL LEAK", "Blood is actually fuel, and gets used over time. Heal before all of your HP runs out."), new Setting[]
+                {
+                    new SliderSubsetting("artiset_fuelleak_multi", new SliderSubsettingElement(new Metadata("MULTIPLIER", "HP lost per second.")).Self, 1, 20, 5, true, "{0}"),
+                }), false),
+                    
+                new ToggleSetting("ARTIFACT_floorlava", new MutatorElement(Pages[6].Holder, new Metadata("FLOOR IS LAVA", "You are damaged when grounded. Based on a mod by <b>nptnk#0001</b>."), new Setting[]
+                {
+                    new SliderSubsetting("artiset_floorlava_mult", new SliderSubsettingElement(new Metadata("DAMAGE", "Damage lost per second.")).Self, 1, 100, 100, true, "{0}"),
+                    new SliderSubsetting("artiset_floorlava_time", new SliderSubsettingElement(new Metadata("TIME", "Time before you start getting hurt.")).Self, 0f, 5, 0.1f, false, "{0}s"),
+                }), false),
+                    
+                new ToggleSetting("ARTIFACT_fresh", new MutatorElement(Pages[6].Holder, new Metadata("FRESHNESS", "You get hurt whenever your freshness rank is below a certain amount."), new Setting[]
+                {
+                    new SliderSubsetting("artiset_fresh_fr", new SliderSubsettingElement(new Metadata("FRESH", "HP lost per second on the 'Fresh' rank.")).Self, 0, 100, 0, true, "{0}"),
+                    new SliderSubsetting("artiset_fresh_us", new SliderSubsettingElement(new Metadata("USED", "HP lost per second on the 'Used' rank.")).Self, 0, 100, 4, true, "{0}"),
+                    new SliderSubsetting("artiset_fresh_st", new SliderSubsettingElement(new Metadata("STALE", "HP lost per second on the 'Stale' rank.")).Self, 0, 100, 8, true, "{0}"),
+                    new SliderSubsetting("artiset_fresh_du", new SliderSubsettingElement(new Metadata("DULL", "HP lost per second on the 'Dull' rank.")).Self, 0, 100, 12, true, "{0}"),
+                }), false),
+                    
+                new ToggleSetting("ARTIFACT_gofast", new MutatorElement(Pages[6].Holder, new Metadata("SPEED", "Change the speed of both yourself, and your enemies."), new Setting[]
+                {
+                    new SliderSubsetting("artiset_gofast_player", new SliderSubsettingElement(new Metadata("PLAYER", "Player speed multiplier.")).Self, 0.5f, 7.5f, 2, false, "{0}x"),
+                    new SliderSubsetting("artiset_gofast_enemy", new SliderSubsettingElement(new Metadata("ENEMY", "Enemy speed multiplier.")).Self, 0.5f, 7.5f, 2, false, "{0}x"),
+                }), false),
+                    
+                new ToggleSetting("ARTIFACT_ice", new MutatorElement(Pages[6].Holder, new Metadata("ULTRAKILL ON ICE", "You become slippery."), new Setting[]
+                {
+                    new SliderSubsetting("artiset_ice_frict", new SliderSubsettingElement(new Metadata("FRICTION", "Friction while walking.")).Self, 0, 2, 0.5f, false, "{0}x"),
+                }), false),
+                    
+                new ToggleSetting("ARTIFACT_superhot", new MutatorElement(Pages[6].Holder, new Metadata("ULTRAHOT", "Time only moves when you move.")), false),
+                new ToggleSetting("ARTIFACT_glass", new MutatorElement(Pages[6].Holder, new Metadata("GLASS", "Deal two times the damage - at the cost of 70% of your health.")), false),
+                new ToggleSetting("ARTIFACT_diceroll", new MutatorElement(Pages[6].Holder, new Metadata("DICE ROLL", "Your loadout is randomised at a chosen interval."), new Setting[]
+                {
+                    new SliderSubsetting("artiset_diceroll_timereset", new SliderSubsettingElement(new Metadata("INTERVAL", "Time between resets.")).Self, 5, 300, 30, true, "{0}s"),
+                }), false),
+                    
+                new ToggleSetting("ARTIFACT_water", new MutatorElement(Pages[6].Holder, new Metadata("SUBMERGED", "Every level is flooded with water.")), false),
+                new ToggleSetting("ARTIFACT_whiphard", new MutatorElement(Pages[6].Holder, new Metadata("WHIP FIX", "Change the hard damage gained from whiplashing. Made pre-Patch11b, obsolete."), new Setting[]
+                {
+                    new SliderSubsetting("artiset_whip_hard_mult", new SliderSubsettingElement(new Metadata("MULTIPLIER", "Hard damage multiplier.")).Self, 0f, 2f, 0.5f, false, "{0}x"),
+                }), false),
             };
 
-            foreach (Setting set in Settings)
-                SettingRegistry.settings.Add(set);
 
             #endregion
 
@@ -587,21 +506,13 @@ namespace ULTRAKILLtweaker
         {
             public static void Postfix(FinalRank __instance)
             {
-                GameObject hud = NewMovement.Instance.gameObject.ChildByName("Main Camera").ChildByName("HUD Camera").ChildByName("HUD");
-                Text text = hud.ChildByName("FinishCanvas").ChildByName("Panel").ChildByName("Extra Info").ChildByName("Text").GetComponent<Text>();
                 string mods = "";
-                int ModAmount = 0;
 
-                foreach (Setting mod in SettingRegistry.settings)
+                foreach (TweakHandler th in TypeToHandler.Values)
                 {
-                    if (mod.GetType() == typeof(ArtifactSetting))
+                    if (th.enabled)
                     {
-                        if (!Convert.ToBoolean(mod.value))
-                        {
-                            ModAmount++;
-                            mods += ((ArtifactSetting)mod).GetDetails() + ", ";
-
-                        }
+                        mods += th.GetType().Name;
                     }
                 }
 

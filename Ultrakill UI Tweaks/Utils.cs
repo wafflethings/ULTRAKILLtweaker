@@ -17,18 +17,9 @@ namespace ULTRAKILLtweaker
     {
         public static T GetSetting<T>(string ID)
         {
-            bool arti = SettingRegistry.idToSetting[ID].GetType() == typeof(ArtifactSetting);
-
             if (typeof(T) == typeof(bool))
             {
-                if (arti)
-                {
-                    return (T)(object)!Convert.ToBoolean(SettingRegistry.idToSetting[ID].value);
-                }
-                else
-                {
-                    return (T)(object)Convert.ToBoolean(SettingRegistry.idToSetting[ID].value);
-                }
+                return (T)(object)Convert.ToBoolean(SettingRegistry.idToSetting[ID].value);
             }
 
             if (typeof(T) == typeof(float))

@@ -43,11 +43,15 @@ namespace ULTRAKILLtweaker.Tweaks.UIElements
         public UIElement(LayoutGroup lg, Metadata meta)
         {
             Self = GameObject.Instantiate(Settings[AssetName()]);
-            Self.GetComponent<RectTransform>().SetParent(lg.transform);
 
-            RectTransform rt = lg.GetComponent<RectTransform>();
-            rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rt.rect.height + Offset());
-            Self.transform.localScale = Vector3.one;
+            if (lg != null)
+            {
+                Self.GetComponent<RectTransform>().SetParent(lg.transform);
+
+                RectTransform rt = lg.GetComponent<RectTransform>();
+                rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rt.rect.height + Offset());
+                Self.transform.localScale = Vector3.one;
+            }
 
             // Set name, desc, stuff
         }

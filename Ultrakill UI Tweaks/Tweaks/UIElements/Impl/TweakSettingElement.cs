@@ -12,7 +12,7 @@ namespace ULTRAKILLtweaker.Tweaks.UIElements.Impl
     {
         public LayoutGroup Subsettings { get; private set; }
 
-        public TweakSettingElement(LayoutGroup lg, Metadata meta) : base(lg, meta)
+        public TweakSettingElement(LayoutGroup lg, Metadata meta, Setting[] children = null) : base(lg, meta)
         {
             Self.ChildByName("Option Name").GetComponent<Text>().text = meta.Name;
             Self.ChildByName("Bubble").ChildByName("Text").GetComponent<Text>().text = meta.Description;
@@ -33,6 +33,18 @@ namespace ULTRAKILLtweaker.Tweaks.UIElements.Impl
             Self.ChildByName("Subsetting Host").SetActive(false);
 
             Self.AddComponent<TweakSettingBehaviour>();
+
+            if (children != null)
+            {
+                foreach (Setting s in children)
+                {
+                    s.self.GetComponent<RectTransform>().SetParent(Subsettings.transform);
+
+                    RectTransform rt = Subsettings.GetComponent<RectTransform>();
+                    rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rt.rect.height + Offset());
+                    s.self.transform.localScale = Vector3.one;
+                }
+            }
         }
 
         public class TweakSettingBehaviour : MonoBehaviour

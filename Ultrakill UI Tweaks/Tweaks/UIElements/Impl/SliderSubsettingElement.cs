@@ -9,7 +9,7 @@ namespace ULTRAKILLtweaker.Tweaks.UIElements.Impl
 {
     public class SliderSubsettingElement : UIElement
     {
-        public SliderSubsettingElement(LayoutGroup lg, Metadata meta) : base(lg, meta)
+        public SliderSubsettingElement(Metadata meta) : base(null, meta)
         {
             Self.ChildByName("Option Name").GetComponent<Text>().text = meta.Name;
             Self.ChildByName("Option Description").GetComponent<Text>().text = meta.Description;
