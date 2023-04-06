@@ -1,3 +1,8 @@
+# THIS MOD IS DEPRECATED!
+I'm working on a ground-up rewrite of this mod. It should be out soon, and available [here](https://github.com/wafflethings/UltraTweaker), and on Thunderstore.
+It will have all the same featuers and more, but with much better performance, and actually maintainable. 
+
+
 # ULTRAKILLtweaker
 ULTRAKILLtweaker is a mod for Ultrakill that lets you tweak various things.
 
